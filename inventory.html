@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Raider Stash</title>
+<meta name="description" content="ARC Raiders stash manager: what to keep, sell or recycle, and what you still need for upgrades, projects and quests.">
+<meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+<meta name="app-version" content="202611202158">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skill Tree">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/inventory.css?v=202611202158">
+</head>
+<body>
+<header class="ibar" id="bar">
+  <svg class="stripes" viewBox="0 0 60 96" aria-hidden="true"><g fill="none" stroke-width="5"><path d="M4 0 L40 96" stroke="#ff2a36"/><path d="M11 0 L47 96" stroke="#ffd21a"/><path d="M18 0 L54 96" stroke="#2bf57f"/><path d="M25 0 L61 96" stroke="#3fd6e8"/></g></svg>
+  <nav class="pages" aria-label="Sections"><a href="./" aria-label="Skill tree"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M12 13 6 8M12 11l6-5M6 8V4M18 6V3"/><circle cx="12" cy="21" r="1.5"/><circle cx="6" cy="4" r="1.5"/><circle cx="18" cy="3" r="1.5"/><circle cx="12" cy="8" r="1.5"/></svg><span>Tree</span></a><a href="inventory.html" aria-label="Stash" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18v12H3zM3 8l2-4h14l2 4M9 12h6"/></svg><span>Stash</span></a></nav>
+  <div class="istats">
+    <div class="istat"><span class="lab">Items</span><span class="num" id="statItems">0</span></div>
+    <div class="istat"><span class="lab">Value</span><span class="num" id="statValue">0</span></div>
+  </div>
+  <span class="spacer"></span>
+  <button class="abtn" id="planBtn" type="button">Plan</button>
+  <button class="abtn hot" id="linkBtn" type="button">Link</button>
+</header>
+
+<main class="imain">
+  <div class="filters" id="filters" role="tablist" aria-label="Show">
+    <button type="button" role="tab" data-f="all">All<span></span></button>
+    <button type="button" role="tab" data-f="keep" style="--c:var(--keep)">Keep<span></span></button>
+    <button type="button" role="tab" data-f="sell" style="--c:var(--sell)">Sell<span></span></button>
+    <button type="button" role="tab" data-f="recycle" style="--c:var(--recy)">Recycle<span></span></button>
+    <button type="button" role="tab" data-f="need" style="--c:var(--need)">Need<span></span></button>
+  </div>
+  <div class="searchrow">
+    <input id="q" type="search" placeholder="Search stash" autocomplete="off" spellcheck="false" aria-label="Search">
+    <select id="sort" aria-label="Sort">
+      <option value="value">Value</option>
+      <option value="name">Name</option>
+      <option value="qty">Qty</option>
+      <option value="rarity">Rarity</option>
+    </select>
+    <button class="abtn sq" id="addBtn" type="button" aria-label="Add item">+</button>
+  </div>
+  <div class="note" id="note"></div>
+  <ul class="list" id="list"></ul>
+</main>
+
+<!-- item details -->
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="itemSheet" hidden aria-label="Item"></section>
+
+<!-- full-screen panels -->
+<section class="panel" id="addPanel" hidden aria-label="Add item">
+  <div class="phd"><h2>Add item</h2><button class="abtn" data-close type="button">Done</button></div>
+  <input id="addQ" type="search" placeholder="Search all items" autocomplete="off" spellcheck="false" aria-label="Search all items">
+  <ul class="list compact" id="addList"></ul>
+</section>
+
+<section class="panel" id="linkPanel" hidden aria-label="Link ArcTracker">
+  <div class="phd"><h2>Your stash</h2><button class="abtn" data-close type="button">Done</button></div>
+  <div class="card" id="linkStatus"></div>
+  <div class="card">
+    <h3>ArcTracker link</h3>
+    <label class="fld"><span>App key</span><input id="appKey" placeholder="arc_k1_..." autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="fld"><span>Your key</span><input id="userKey" placeholder="arc_u1_..." autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <div class="row">
+      <button class="abtn hot grow" id="syncBtn" type="button">Save &amp; sync</button>
+      <button class="abtn" id="forgetBtn" type="button">Forget keys</button>
+    </div>
+    <p class="fine">Keys stay on this device only. They are never sent anywhere except ArcTracker.</p>
+    <details class="steps">
+      <summary>How to get the keys (about 10 min, once)</summary>
+      <ol>
+        <li>On <a href="https://arctracker.io" target="_blank" rel="noopener">arctracker.io</a>, sign in and link your ARC Raiders account so it can see your stash.</li>
+        <li>Open <a href="https://arctracker.io/developers/apps" target="_blank" rel="noopener">Developers › Apps</a> and register an app (any name, e.g. "My Companion"). Copy the <b>app key</b> (arc_k1_…).</li>
+        <li>Open <a href="https://arctracker.io/settings" target="_blank" rel="noopener">Settings › Developer Access</a> and create a personal key. Tick <b>stash:read</b>, plus <b>hideout:read</b>, <b>quests:read</b> and <b>projects:read</b> so your plan fills in by itself. Copy it (arc_u1_…).</li>
+        <li>Paste both keys above and tap <b>Save &amp; sync</b>.</li>
+      </ol>
+    </details>
+  </div>
+  <div class="card">
+    <h3>No link? Type or paste it</h3>
+    <p class="fine">Use <b>+</b> on the main screen to add items one by one, or paste a list here: one item per line, like <code>Rusted Gear x4</code> or <code>Wires, 12</code>. JSON from Export works too.</p>
+    <textarea id="importBox" rows="5" spellcheck="false" placeholder="Metal Parts x40&#10;Wires, 12"></textarea>
+    <div class="row">
+      <button class="abtn grow" id="importAdd" type="button">Add to stash</button>
+      <button class="abtn grow" id="importReplace" type="button">Replace stash</button>
+    </div>
+    <div class="row">
+      <button class="abtn grow" id="exportBtn" type="button">Copy export</button>
+      <button class="abtn danger grow" id="clearBtn" type="button">Empty stash</button>
+    </div>
+  </div>
+  <p class="fine">Item values and recipes: ArcTracker game data from <span id="dataDate"></span> (<a href="https://github.com/RaidTheory/arcraiders-data" target="_blank" rel="noopener">RaidTheory/arcraiders-data</a>). Fan-made, not affiliated with Embark Studios.</p>
+</section>
+
+<section class="panel" id="planPanel" hidden aria-label="Plan">
+  <div class="phd"><h2>Plan</h2><button class="abtn" data-close type="button">Done</button></div>
+  <p class="fine" id="planSrc"></p>
+  <div class="card">
+    <h3>Workshop</h3>
+    <label class="tog"><input type="checkbox" id="nextOnly"> <span>Only keep for the next level of each station</span></label>
+    <ul class="steppers" id="hideoutList"></ul>
+  </div>
+  <div class="card">
+    <h3>Projects</h3>
+    <ul class="steppers" id="projectList"></ul>
+  </div>
+  <div class="card">
+    <h3>Quest turn-ins</h3>
+    <p class="fine">Tick quests you've finished.</p>
+    <ul class="checks" id="questList"></ul>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="js/game-data.js?v=202611202158"></script>
+<script src="js/inventory.js?v=202611202158"></script>
+</body>
+</html>

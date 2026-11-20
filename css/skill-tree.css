@@ -246,3 +246,16 @@ body.phone .gate[data-b=c]{--c:var(--cond)} body.phone .gate[data-b=m]{--c:var(-
 .bh-bar .tick{position:absolute;top:-4px;width:2px;height:14px;margin-left:-1px;background:#5a606b}
 .bh-bar .tick.hit{background:#fff}
 .bh-bar .tick em{position:absolute;top:15px;left:50%;transform:translateX(-50%);font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* page switch (Tree / Stash), same look on both pages */
+.pages{display:flex;border:1px solid var(--line-hi);flex:0 0 auto}
+.pages a{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:7px 11px;min-height:36px;display:flex;align-items:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.pages a+a{border-left:1px solid var(--line-hi)}
+.pages a[aria-current=page]{background:var(--fg);color:#000}
+body.phone .bar .pages a{padding:5px 8px;font-size:12.5px;letter-spacing:.06em;min-height:34px}
+body.phone .bar{gap:8px}
+body.phone .bar .stats{gap:10px}
+body.phone .brand{padding-left:42px}
+
+.pages a svg{display:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:420px){.pages a svg{display:block}.pages a span{display:none}.pages a{padding:5px 8px!important;justify-content:center;min-width:40px}}
