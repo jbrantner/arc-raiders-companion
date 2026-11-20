@@ -192,7 +192,7 @@ body.phone .wrap{height:calc(100dvh - var(--barh,60px));display:flex;flex-direct
 body.phone .tabs{position:static;margin:0;padding:6px 0 8px}
 body.phone .scroller{flex:1 1 auto;height:auto;min-height:0}
 body.phone .example{display:none!important}
-body.phone .msg{cursor:pointer;position:fixed;z-index:25;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px);bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0;padding:10px 16px;border-radius:999px;background:#1d1708;color:#ffd27a;border:1px solid var(--warn);min-height:0;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.7)}
+body.phone .msg{cursor:pointer;position:fixed;z-index:25;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 32px);bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0;padding:10px 16px;border-radius:4px;border-left-width:4px;background:#1d1708;color:#ffd27a;border:1px solid var(--warn);min-height:0;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.7)}
 body.phone .msg.ok{background:#14171d;color:var(--fg);border-color:var(--line-hi)}
 body.phone .msg:empty{display:none}
 body.phone .extras{display:block;position:fixed;z-index:22;inset:0;background:#000;overflow-y:auto;-webkit-overflow-scrolling:touch;
