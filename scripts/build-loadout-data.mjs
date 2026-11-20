@@ -50,7 +50,7 @@ const shields = SNAP.items.filter((x) => x.t === "Shield").map((x) => ({ ...base
 
 /* ---------- Mods ---------- */
 const slotOf = (id) => /grip/.test(id) ? "grip" : /mag/.test(id) ? "mag" : /stock|converter/.test(id) ? "stock" : /splitter/.test(id) ? "tech" : "muzzle";
-const mods = SNAP.items.filter((x) => x.t === "Modification").map((x) => { const r = RTI.get(x.id) || {}; return { ...base(x), slot: slotOf(x.id), fx: fx(r).filter((e) => !/^compatible/i.test(e[0])), fits: r.compatibleWith || [] }; });
+const mods = SNAP.items.filter((x) => x.t === "Modification").map((x) => { const r = RTI.get(x.id) || {}; return { ...base(x), d: desc(x.id), slot: slotOf(x.id), fx: fx(r).filter((e) => !/^compatible/i.test(e[0])), fits: r.compatibleWith || [] }; });
 
 /* ---------- Weapons, grouped by family ---------- */
 const WT = ["Assault Rifle", "SMG", "Pistol", "Shotgun", "Battle Rifle", "Sniper Rifle", "LMG", "Hand Cannon", "Special"];
