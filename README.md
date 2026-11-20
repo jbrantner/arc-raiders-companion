@@ -13,6 +13,6 @@ Live: https://jbrantner.github.io/arc-raiders-companion/
 
 Static site, no build step. GitHub Pages serves it straight from `main`.
 
-Before each push, run `scripts/bump-version.sh`. It stamps a new version in `version.json` and the asset links, so open copies of the app show an "Update available" button and load fresh files.
+Before each push, run `scripts/bump-version.sh`. It stamps a new version on the CSS and JS links so phones load fresh files the next time the app is opened.
 
 Not affiliated with Embark Studios.
