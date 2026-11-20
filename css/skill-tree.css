@@ -173,3 +173,11 @@ body.phone .tabs{top:0}
   font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;
   background:#3fd6e8;color:#000;border:0;border-radius:999px;padding:12px 22px;min-height:46px;cursor:pointer;
   box-shadow:0 0 24px rgba(63,214,232,.55);white-space:nowrap;touch-action:manipulation}
+
+/* phones: branches you're not focused on fade back */
+body.phone .field.dragging{transition:none}
+body.phone .field :is(.node,.blab,.gate,.e){transition:opacity .35s ease,filter .35s ease,stroke .2s,stroke-width .2s}
+body.phone[data-focus=c] .field :is(.node,.blab,.gate):not([data-b=c]),body.phone[data-focus=c] .field .e:not(.c),
+body.phone[data-focus=m] .field :is(.node,.blab,.gate):not([data-b=m]),body.phone[data-focus=m] .field .e:not(.m),
+body.phone[data-focus=s] .field :is(.node,.blab,.gate):not([data-b=s]),body.phone[data-focus=s] .field .e:not(.s){
+  opacity:calc(.28 + .5 * var(--peek,0));filter:saturate(calc(.15 + .85 * var(--peek,0)))}

@@ -110,8 +110,8 @@ function build(){
   const LAB={c:[455,865],m:[800,642],s:[1145,865]};
   for(const b of ["c","m","s"]){
     html+=`<div class="blab" data-b="${b}" style="${pc(LAB[b])}"><span>${BR[b].name.toUpperCase()}</span><b data-bt="${b}">0</b><small data-bl="${b}"></small></div>`;
-    html+=`<span class="gate" data-g10="${b}" style="${pc(P(b,"H1"))}">10</span>`;
-    html+=`<span class="gate" data-g30="${b}" style="${pc(P(b,"H3"))}">30 · 40</span>`;
+    html+=`<span class="gate" data-b="${b}" data-g10="${b}" style="${pc(P(b,"H1"))}">10</span>`;
+    html+=`<span class="gate" data-b="${b}" data-g30="${b}" style="${pc(P(b,"H3"))}">30 · 40</span>`;
     ORDER.filter(id=>SK[id].b===b).forEach(id=>{
       const sk=SK[id]; const big=sk.slot==="st"||isGateSlot(sk.slot);
       html+=`<div class="node ${big?"xl":"sm"}" data-b="${b}" data-id="${id}" style="${pc(P(b,sk.slot))}"><button type="button" aria-label="${sk.name}">${ARC.icon(sk.icon)}</button>${sk.max>1?`<span class="pill"></span>`:""}<span class="lock" hidden>${ARC.LOCK}</span><span class="nm">${sk.name}</span></div>`;
@@ -286,16 +286,19 @@ const VIEW_KEY = "arcPlannerView";
 const CROPS = {c:[55,150,765,910], m:[560,20,1040,910], s:[835,150,1545,910], all:[0,0,1600,910]};
 let view = "m"; try{ view = localStorage.getItem(VIEW_KEY) || "m"; }catch(e){}
 const tabs = $("#tabs");
+let cur={tx:0,ty:0,k:1};
 function applyView(){
   const phone = phoneMQ.matches;
   document.body.classList.toggle("phone", phone);
   tabs.hidden = !phone;
-  if(!phone){ field.style.removeProperty("--tf"); field.parentElement.style.removeProperty("--vh"); return; }
+  if(!phone){ delete document.body.dataset.focus; field.style.removeProperty("--tf"); field.parentElement.style.removeProperty("--vh"); return; }
   if(!CROPS[view]) view="m";
   const [x0,y0,x1,y1] = CROPS[view];
   const sc = field.parentElement, w = sc.clientWidth || innerWidth;
   const k = w/(x1-x0);
-  field.style.setProperty("--tf", `translate(${(-x0*k).toFixed(1)}px,${(-y0*k).toFixed(1)}px) scale(${k.toFixed(4)})`);
+  cur={tx:-x0*k,ty:-y0*k,k};
+  field.style.setProperty("--tf", `translate(${cur.tx.toFixed(1)}px,${cur.ty.toFixed(1)}px) scale(${k.toFixed(4)})`);
+  document.body.dataset.focus=view;
   sc.style.setProperty("--vh", `${Math.round((y1-y0)*k)}px`);
   document.body.classList.toggle("view-all", view==="all");
   tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected", b.dataset.v===view));
@@ -312,17 +315,35 @@ field.parentElement.addEventListener("click",e=>{
   const r=field.parentElement.getBoundingClientRect(), fx=(e.clientX-r.left)/r.width;
   setView(fx<.38?"c":fx>.62?"s":"m");
 });
-// swipe left / right to move between branches
-let t0=null;
-field.parentElement.addEventListener("touchstart",e=>{const t=e.touches[0]; t0=e.touches.length===1?{x:t.clientX,y:t.clientY,at:Date.now()}:null;},{passive:true});
-field.parentElement.addEventListener("touchend",e=>{
-  if(!t0||!phoneMQ.matches) return; const t=e.changedTouches[0], dx=t.clientX-t0.x, dy=t.clientY-t0.y;
-  if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && Date.now()-t0.at<600){
-    const order=["c","m","s"], i=order.indexOf(view);
-    if(i<0) setView("m"); else { const n=order[i+(dx<0?1:-1)]; if(n) setView(n); }
-  }
-  t0=null;
+// carousel swipe: the tree follows your finger, then snaps to the next branch (or back)
+const ORDERV=["c","m","s"];
+let drag=null;
+const sc0=field.parentElement;
+sc0.addEventListener("touchstart",e=>{
+  if(!phoneMQ.matches||e.touches.length!==1||view==="all"){drag=null;return;}
+  const t=e.touches[0]; drag={x:t.clientX,y:t.clientY,at:Date.now(),dx:0,lock:null};
 },{passive:true});
+sc0.addEventListener("touchmove",e=>{
+  if(!drag) return; const t=e.touches[0], dx=t.clientX-drag.x, dy=t.clientY-drag.y;
+  if(!drag.lock){ if(Math.abs(dx)<8&&Math.abs(dy)<8) return; drag.lock=Math.abs(dx)>Math.abs(dy)?"x":"y"; if(drag.lock==="x") field.classList.add("dragging"); }
+  if(drag.lock!=="x") return;
+  e.preventDefault();
+  const i=ORDERV.indexOf(view), hasNext=ORDERV[i+(dx<0?1:-1)];
+  drag.dx = hasNext ? dx : dx*.3;          // rubber band at the ends
+  field.style.setProperty("--tf",`translate(${(cur.tx+drag.dx).toFixed(1)}px,${cur.ty.toFixed(1)}px) scale(${cur.k.toFixed(4)})`);
+  const p=Math.min(1,Math.abs(drag.dx)/(sc0.clientWidth*.6));
+  field.style.setProperty("--peek",p.toFixed(3));
+},{passive:false});
+function endDrag(){
+  if(!drag) return; const d=drag; drag=null;
+  field.classList.remove("dragging"); field.style.removeProperty("--peek");
+  if(d.lock!=="x") return;
+  const v=Math.abs(d.dx)/Math.max(1,Date.now()-d.at), i=ORDERV.indexOf(view);
+  const n=ORDERV[i+(d.dx<0?1:-1)];
+  if(n && (Math.abs(d.dx)>sc0.clientWidth*.25 || v>.4)) setView(n); else applyView();
+}
+sc0.addEventListener("touchend",endDrag,{passive:true});
+sc0.addEventListener("touchcancel",endDrag,{passive:true});
 phoneMQ.addEventListener?.("change",applyView);
 addEventListener("resize",applyView);
 if(!hoverMode){
