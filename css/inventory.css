@@ -166,5 +166,6 @@ textarea{width:100%;background:#000;border:1px solid var(--line-hi);padding:9px 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 .pages a svg{display:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-@media (max-width:420px){.pages a svg{display:block}.pages a span{display:none}.pages a{padding:5px 8px!important;justify-content:center;min-width:40px}}
+@media (max-width:420px){.pages a svg{display:block}.pages a span{display:none}.pages a{padding:5px 6px!important;justify-content:center;min-width:36px}}
 @media (max-width:400px){.ibar .abtn{padding:6px 8px;letter-spacing:.04em;--cut:6px}.istats{gap:9px}}
+@media (max-width:380px){.pages a{min-width:32px;padding:5px 4px!important}}

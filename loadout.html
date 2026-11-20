@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Raider Loadout</title>
+<meta name="description" content="ARC Raiders loadout planner: augment, shield, weapons with mods and Amplified upgrades, quick use, safe pocket and backpack.">
+<meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+<meta name="app-version" content="202611202216">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skill Tree">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/loadout.css?v=202611202216">
+</head>
+<body>
+<header class="ibar">
+  <svg class="stripes" viewBox="0 0 60 96" aria-hidden="true"><g fill="none" stroke-width="5"><path d="M4 0 L40 96" stroke="#ff2a36"/><path d="M11 0 L47 96" stroke="#ffd21a"/><path d="M18 0 L54 96" stroke="#2bf57f"/><path d="M25 0 L61 96" stroke="#3fd6e8"/></g></svg>
+  <nav class="pages" aria-label="Sections"><a href="./" aria-label="Skill tree"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M12 13 6 8M12 11l6-5M6 8V4M18 6V3"/><circle cx="12" cy="21" r="1.5"/><circle cx="6" cy="4" r="1.5"/><circle cx="18" cy="3" r="1.5"/><circle cx="12" cy="8" r="1.5"/></svg><span>Tree</span></a><a href="inventory.html" aria-label="Stash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18v12H3zM3 8l2-4h14l2 4M9 12h6"/></svg><span>Stash</span></a><a href="loadout.html" aria-label="Loadout" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/></svg><span>Loadout</span></a></nav>
+  <div class="istats">
+    <div class="istat"><span class="lab">Weight</span><span class="num" id="statW">0</span></div>
+    <div class="istat"><span class="lab">Value</span><span class="num" id="statV">0</span></div>
+  </div>
+  <span class="spacer"></span>
+  <button class="abtn hot" id="savedBtn" type="button">Saved</button>
+</header>
+
+<main class="lmain" id="main">
+  <div class="lname"><button type="button" id="nameBtn"><span id="loName">New loadout</span><small id="loNote"></small></button></div>
+  <div class="wbar" id="wbar" aria-hidden="true"><b></b></div>
+
+  <div class="row2">
+    <button class="slot big" type="button" data-k="aug" id="sAug"></button>
+    <button class="slot big" type="button" data-k="shield" id="sShield"></button>
+  </div>
+  <div class="weap" id="w0"></div>
+  <div class="weap" id="w1"></div>
+
+  <div class="grp">
+    <div class="glab"><span>Quick use</span><span id="qCount"></span></div>
+    <div class="cells" id="quick"></div>
+  </div>
+  <div class="grp" id="grpX">
+    <div class="glab"><span id="xLab">Safe pocket</span><span></span></div>
+    <div class="cells" id="xcells"></div>
+  </div>
+  <div class="grp grow">
+    <div class="glab"><span>Backpack</span><span id="bpCount"></span></div>
+    <div class="cells bp" id="bp"></div>
+  </div>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" hidden aria-label="Choose"></section>
+
+<section class="panel" id="savedPanel" hidden aria-label="Loadouts">
+  <div class="phd"><h2>Loadouts</h2><button class="abtn" data-close type="button">Done</button></div>
+  <div class="card">
+    <h3>This loadout</h3>
+    <label class="fld"><span>Name</span><input id="nameIn" maxlength="40" autocomplete="off" spellcheck="false"></label>
+    <div class="row">
+      <button class="abtn hot grow" id="saveBtn" type="button">Save</button>
+      <button class="abtn grow" id="newBtn" type="button">New</button>
+      <button class="abtn danger grow" id="clearLo" type="button">Clear</button>
+    </div>
+  </div>
+  <div class="card" id="haveCard"></div>
+  <div class="card">
+    <h3>Saved</h3>
+    <ul class="saved" id="savedList"></ul>
+  </div>
+  <div class="card">
+    <h3>Loadout code</h3>
+    <textarea id="codeBox" rows="3" spellcheck="false" aria-label="Loadout code"></textarea>
+    <div class="row">
+      <button class="abtn grow" id="copyCode" type="button">Copy code</button>
+      <button class="abtn grow" id="copyLink" type="button">Share link</button>
+      <button class="abtn grow" id="loadCode" type="button">Load code</button>
+    </div>
+  </div>
+  <p class="fine">Items, weapons and mods: ArcTracker game data from <span id="dataDate"></span> and <a href="https://github.com/RaidTheory/arcraiders-data" target="_blank" rel="noopener">RaidTheory/arcraiders-data</a>. Augment slot counts from community guides, checked against patch notes through 2.6.0 (Nov 17, 2026). Amplified upgrades follow the ARC Raiders Wiki. Fan-made, not affiliated with Embark Studios.</p>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="js/loadout-data.js?v=202611202216"></script>
+<script src="js/loadout.js?v=202611202216"></script>
+</body>
+</html>
