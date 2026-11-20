@@ -7,6 +7,7 @@
 <meta name="description" content="Plan your ARC Raiders 2.0 skill tree: Conditioning, Mobility and Survival.">
 <meta name="theme-color" content="#000000">
 <meta name="format-detection" content="telephone=no">
+<meta name="app-version" content="202611202127">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -17,7 +18,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/skill-tree.css">
+<link rel="stylesheet" href="css/skill-tree.css?v=202611202127">
 </head>
 <body>
 <header class="bar">
@@ -67,9 +68,11 @@
   <p class="help">Skill names, max ranks and per-rank values come from the 2.0 Frozen Trail game data as reported by the community wiki, checked against patch notes through 2.6.0 (Nov 17, 2026). The links between skills follow community planners, so double-check a node in game before you spend a reset on it.</p>
 </div>
 
+<button class="update" id="updateBtn" type="button" hidden>Update available · tap to update</button>
 <div class="tip" id="tip" hidden></div>
-<script src="js/skill-data.js"></script>
-<script src="js/icons.js"></script>
-<script src="js/skill-tree.js"></script>
+<script src="js/skill-data.js?v=202611202127"></script>
+<script src="js/icons.js?v=202611202127"></script>
+<script src="js/skill-tree.js?v=202611202127"></script>
+<script src="js/update-check.js?v=202611202127"></script>
 </body>
 </html>
