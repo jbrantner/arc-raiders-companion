@@ -6,6 +6,7 @@
 <title>Raider Skill Planner</title>
 <meta name="description" content="Plan your ARC Raiders 2.0 skill tree: Conditioning, Mobility and Survival.">
 <meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -13,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Skill Tree">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="css/skill-tree.css">
@@ -27,9 +28,7 @@
   </div>
   <div class="stats">
     <div class="stat"><span class="lab">Spent</span><span class="num" id="spent">0</span></div>
-    <div class="stat"><label class="lab" for="availNow">Have</label><input id="availNow" type="number" min="0" max="200" value="69"></div>
-    <div class="stat"><span class="lab">Left</span><span class="num" id="leftNow">69</span></div>
-    <div class="stat"><label class="lab" for="availMax">At 75</label><input id="availMax" type="number" min="0" max="200" value="86"></div>
+    <div class="stat"><label class="lab" for="availMax">Points</label><input id="availMax" type="number" inputmode="numeric" min="0" max="200" value="86"></div>
     <div class="stat"><span class="lab">Left</span><span class="num" id="leftMax">86</span></div>
   </div>
   <div class="tools">
@@ -41,10 +40,16 @@
 <div class="wrap">
   <div class="msg ok" id="msg" role="status" aria-live="polite"></div>
   <div class="example" id="exampleBox" hidden>
-    <span><strong>Example build loaded.</strong> A 69-point loot build so you can see how it works.</span>
+    <span><strong>Example build loaded.</strong><span class="ex-long"> A loot build so you can see how it works.</span></span>
     <button class="btn" id="clearExample" type="button">Start empty</button>
   </div>
 
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Branch" hidden>
+    <button type="button" role="tab" data-v="c" style="--c:var(--cond)">Cond<span data-tt="c"></span></button>
+    <button type="button" role="tab" data-v="m" style="--c:var(--mob)">Mobility<span data-tt="m"></span></button>
+    <button type="button" role="tab" data-v="s" style="--c:var(--surv)">Survival<span data-tt="s"></span></button>
+    <button type="button" role="tab" data-v="all" style="--c:var(--fg)">All</button>
+  </nav>
   <div class="scroller"><div class="field glow" id="field"></div></div>
 
   <p class="help" id="help"><strong>Click</strong> a skill to add a point, <strong>right-click</strong> (or <kbd>Shift</kbd>+click) to take one back. Hover for details. Each branch's middle fork opens at 10 points (keep one of two), and its top three let you take two (first at 30 points, second at 40).</p>

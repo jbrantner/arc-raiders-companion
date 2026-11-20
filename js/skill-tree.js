@@ -10,15 +10,15 @@ for (const b of ["c","m","s"]) S[b].forEach((r,i)=>{
 });
 const bySlot = (b,slot)=>SK[b+SLOTS.indexOf(slot)];
 
-let state = {}; let availNow = 69, availMax = 86, isExample = false;
+let state = {}; let availMax = 86, isExample = false;
 function load(){
   try{
     const raw = localStorage.getItem(SAVE_KEY);
-    if(raw){const d=JSON.parse(raw); state=d.state||{}; availNow=d.availNow??69; availMax=d.availMax??86; isExample=!!d.isExample; return;}
+    if(raw){const d=JSON.parse(raw); state=d.state||{}; availMax=Math.max(86,d.availMax??86); isExample=!!d.isExample; return;}
   }catch(e){}
   state = {...EXAMPLE}; isExample = true;
 }
-function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify({state,availNow,availMax,isExample})); }catch(e){} }
+function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify({state,availMax,isExample})); }catch(e){} }
 
 /* ---------- rules ---------- */
 const r = (s,id)=>s[id]||0;
@@ -58,7 +58,7 @@ function tryChange(id,delta){
   if(nv>sk.max) return {err:`${sk.name} is already maxed.`};
   if(nv<0) return {err:`${sk.name} has no points to remove.`};
   const s={...state,[id]:nv};
-  if(delta>0 && total(s)>availMax) return {err:`Out of points: your level-75 total is ${availMax}. Raise it or take points back.`};
+  if(delta>0 && total(s)>availMax) return {err:`Out of points: you have ${availMax} skill points. Raise it or take points back.`};
   const e=checkBranch(s,sk.b);
   if(e) return {err: delta<0 ? `Can't remove that point. ${e}` : e};
   return {s};
@@ -118,7 +118,7 @@ function build(){
     });
   }
   field.innerHTML=html;
-  const sc=field.parentElement; requestAnimationFrame(()=>{sc.scrollLeft=(sc.scrollWidth-sc.clientWidth)/2;});
+  const sc=field.parentElement; requestAnimationFrame(()=>{if(!document.body.classList.contains("phone")) sc.scrollLeft=(sc.scrollWidth-sc.clientWidth)/2;});
   field.classList.toggle("shownames",showNames);
   $("#namesBtn").setAttribute("aria-pressed",showNames);
 }
@@ -126,13 +126,13 @@ function build(){
 function render(){
   const T=total(state);
   $("#spent").textContent=T;
-  const ln=availNow-T, lm=availMax-T;
-  const lnEl=$("#leftNow"); lnEl.textContent=ln; lnEl.className="num"+(ln<0?" over":"");
+  const lm=availMax-T;
   const lmEl=$("#leftMax"); lmEl.textContent=lm; lmEl.className="num"+(lm<0?" neg":"");
-  $("#availNow").value=availNow; $("#availMax").value=availMax;
+  $("#availMax").value=availMax;
   for(const b of ["c","m","s"]){
     const bt=branchTotal(state,b);
     field.querySelector(`[data-bt="${b}"]`).textContent=bt;
+    const tt=document.querySelector(`[data-tt="${b}"]`); if(tt) tt.textContent=bt;
     const early=["st","eh0","et0","eh1","et1"].reduce((a,x)=>a+g(state,b,x),0);
     const endN=["en0","en1","en2"].filter(x=>g(state,b,x)).length;
     field.querySelector(`[data-bl="${b}"]`).textContent= early<10?`${early}/10 to fork`:(bt-endN<30?`${bt-endN}/30 to top`:(bt-endN<40?`${bt-endN}/40 for 2nd top`:"all gates open"));
@@ -247,7 +247,6 @@ addEventListener("scroll",()=>{if(hoverMode&&hovering) place(hovering);},{passiv
 $("#namesBtn").addEventListener("click",()=>{showNames=!showNames; try{localStorage.setItem(NAMES_KEY,showNames?"1":"0");}catch(e){} field.classList.toggle("shownames",showNames); $("#namesBtn").setAttribute("aria-pressed",showNames);});
 $("#resetAll").addEventListener("click",()=>{state={}; isExample=false; selected=null; hideTip(); setMsg("All points cleared.",true); render();});
 $("#clearExample").addEventListener("click",()=>{state={}; isExample=false; setMsg("Empty tree. Start with the bottom skill in any branch.",true); render();});
-$("#availNow").addEventListener("change",e=>{availNow=Math.max(0,Math.min(200,parseInt(e.target.value)||0)); render();});
 $("#availMax").addEventListener("change",e=>{
   const v=Math.max(0,Math.min(200,parseInt(e.target.value)||0));
   if(v<total(state)){setMsg(`Your plan already uses ${total(state)} points. Take some back before lowering the total.`,false); e.target.value=availMax; return;}
@@ -264,7 +263,7 @@ function decode(v){
     const n=+parts[bi][i]; if(n>SK[id].max) return {err:`${SK[id].name} can't have ${n} points.`}; if(n) s[id]=n;
   }
   for(const b of ["c","m","s"]){const e=checkBranch(s,b); if(e) return {err:e};}
-  if(total(s)>availMax) return {err:`That build uses ${total(s)} points, more than your level-75 total of ${availMax}.`};
+  if(total(s)>availMax) return {err:`That build uses ${total(s)} points, more than your ${availMax} skill points.`};
   return {s};
 }
 $("#copyCode").addEventListener("click",()=>{
@@ -281,8 +280,57 @@ $("#loadCode").addEventListener("click",()=>{
   state=d.s; isExample=false; setMsg("Build loaded.",true); render();
 });
 
+/* ---------- phones: show one branch at a time, scaled to the screen width ---------- */
+const phoneMQ = matchMedia("(max-width: 760px)");
+const VIEW_KEY = "arcPlannerView";
+const CROPS = {c:[55,150,765,910], m:[560,20,1040,910], s:[835,150,1545,910], all:[0,0,1600,910]};
+let view = "m"; try{ view = localStorage.getItem(VIEW_KEY) || "m"; }catch(e){}
+const tabs = $("#tabs");
+function applyView(){
+  const phone = phoneMQ.matches;
+  document.body.classList.toggle("phone", phone);
+  tabs.hidden = !phone;
+  if(!phone){ field.style.removeProperty("--tf"); field.parentElement.style.removeProperty("--vh"); return; }
+  if(!CROPS[view]) view="m";
+  const [x0,y0,x1,y1] = CROPS[view];
+  const sc = field.parentElement, w = sc.clientWidth || innerWidth;
+  const k = w/(x1-x0);
+  field.style.setProperty("--tf", `translate(${(-x0*k).toFixed(1)}px,${(-y0*k).toFixed(1)}px) scale(${k.toFixed(4)})`);
+  sc.style.setProperty("--vh", `${Math.round((y1-y0)*k)}px`);
+  document.body.classList.toggle("view-all", view==="all");
+  tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected", b.dataset.v===view));
+}
+function setView(v){
+  view=v; try{localStorage.setItem(VIEW_KEY,v);}catch(e){}
+  if(selected && SK[selected].b!==v){ selected=null; hideTip(); render(); }
+  applyView();
+}
+tabs.addEventListener("click",e=>{const b=e.target.closest("[data-v]"); if(b) setView(b.dataset.v);});
+// in the overview, tapping a branch zooms into it
+field.parentElement.addEventListener("click",e=>{
+  if(!document.body.classList.contains("view-all")) return;
+  const r=field.parentElement.getBoundingClientRect(), fx=(e.clientX-r.left)/r.width;
+  setView(fx<.38?"c":fx>.62?"s":"m");
+});
+// swipe left / right to move between branches
+let t0=null;
+field.parentElement.addEventListener("touchstart",e=>{const t=e.touches[0]; t0=e.touches.length===1?{x:t.clientX,y:t.clientY,at:Date.now()}:null;},{passive:true});
+field.parentElement.addEventListener("touchend",e=>{
+  if(!t0||!phoneMQ.matches) return; const t=e.changedTouches[0], dx=t.clientX-t0.x, dy=t.clientY-t0.y;
+  if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && Date.now()-t0.at<600){
+    const order=["c","m","s"], i=order.indexOf(view);
+    if(i<0) setView("m"); else { const n=order[i+(dx<0?1:-1)]; if(n) setView(n); }
+  }
+  t0=null;
+},{passive:true});
+phoneMQ.addEventListener?.("change",applyView);
+addEventListener("resize",applyView);
+if(!hoverMode){
+  $("#help").innerHTML='<strong>Tap</strong> a skill, then use <strong>+</strong> and <strong>−</strong>. Use the tabs or swipe to switch branches. Forks open at 10 points (keep one of two); top skills at 30 and 40 (take two of three).';
+}
+
 load();
 const hash=location.hash.match(/^#b=([\d-]+)$/);
 if(hash){const d=decode(hash[1]); if(!d.err){state=d.s; isExample=false; history.replaceState(null,"",location.pathname); setTimeout(()=>setMsg("Build loaded from link.",true));}}
-build(); render();
+build(); render(); applyView();
 })();

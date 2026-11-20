@@ -129,3 +129,41 @@ button.btn.danger:hover{border-color:var(--surv);color:var(--surv)}
 .code input{flex:1 1 280px;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:4px;padding:7px 10px;font-family:var(--mono);font-size:13px}
 @media (max-width:700px){.bar{position:static}.brand h1{font-size:17px}.stripes{top:-12px;height:58px;width:40px}.brand{padding-left:52px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---------- phones: one branch at a time, zoomed to fit ---------- */
+.node button,.tabs button,.btn,.ctl button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tabs{display:flex;gap:6px;position:sticky;top:0;z-index:12;background:#000;padding:8px 0 10px;margin-bottom:-10px}
+.tabs button{flex:1 1 0;min-width:0;min-height:44px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);
+  font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 6px}
+.tabs button span{font-family:var(--mono);font-size:13px;color:var(--c)}
+.tabs button[aria-selected=true]{border-color:var(--c);color:var(--c);background:color-mix(in srgb,var(--c) 12%,#000)}
+.tabs button[data-v=all]{flex:0 0 auto;padding:0 14px}
+body.phone .scroller{overflow:hidden;position:relative;height:var(--vh,400px);transition:height .3s ease;touch-action:pan-y}
+body.phone .field{position:absolute;left:0;top:0;width:1600px;min-width:0;max-width:none;aspect-ratio:auto;height:910px;
+  transform-origin:0 0;transform:var(--tf);transition:transform .35s ease}
+body.phone .node button::before{content:"";position:absolute;inset:-14px;border-radius:50%}
+body.phone .node button{position:relative}
+body.phone .node.xl button::before{inset:-8px}
+body.phone.view-all .node{pointer-events:none}
+body.phone .gate{font-size:15px}
+body.phone .field .pill{font-size:19px;padding:3px 8px;border-width:2px}
+body.phone .blab small{font-size:17px}
+body.phone .wrap{gap:12px}
+body.phone .example{padding:8px 12px;font-size:13px}
+body.phone .example .ex-long{display:none}
+body.phone .tip.sheet{border-radius:14px;padding:14px 16px 12px;box-shadow:0 -6px 30px rgba(0,0,0,.8)}
+body.phone .tip.sheet .ctl button{min-height:52px}
+body.phone .summary{grid-template-columns:1fr}
+body.phone .code input{font-size:16px}
+body.phone .tabs{top:0}
+@media (max-width:760px){
+  .bar{gap:6px 10px;padding-bottom:8px}
+  .brand{min-height:34px}
+  .brand img{width:28px;height:28px}
+  .tools{margin-left:auto}
+  .stats{order:3;width:100%;margin:0;padding-left:16px;justify-content:space-between;gap:4px 10px}
+  .stripes{top:-12px;height:50px;width:38px}
+  .stat input{width:46px;font-size:16px;padding:3px 4px}
+  .num{font-size:17px}
+  .lab{font-size:12px}
+}
