@@ -200,7 +200,10 @@ function setMsg(t,ok){
 $("#msg").addEventListener("click",()=>{clearTimeout(msgTimer); $("#msg").textContent="";});
 function change(id,delta){
   const res=tryChange(id,delta);
-  if(res.err){setMsg(res.err,false); return;}
+  if(res.err){
+    if(!tip.hidden && tip.classList.contains("sheet")){ showTip(id); return; } // the open sheet already shows why
+    setMsg(res.err,false); return;
+  }
   state=res.s; isExample=false; setMsg("",true); render();
 }
 
@@ -219,7 +222,7 @@ function showTip(id){
   const add=tryChange(id,1);
   let st;
   if(rk>=sk.max) st=`<div class="st">Maxed.${hoverMode?" Right-click to take a point back.":""}</div>`;
-  else if(add.err) st=`<div class="st lock">${add.err}</div>`;
+  else if(add.err) st=`<div class="st warn">${add.err}</div>`;
   else st=`<div class="st">${hoverMode?"Click to add a point"+(rk?" · right-click to remove":""):"Ready for a point."}</div>`;
   const cur = sk.ranks && rk ? ` · now ${sk.ranks[rk-1]}` : "";
   tip.innerHTML=`<div class="hd"><span class="ic">${ARC.icon(sk.icon)}</span><div><h3>${sk.name}</h3><div class="tag">${tierTag(sk)}</div></div></div><div class="rk">Rank ${rk} / ${sk.max}${cur}</div><p>${sk.desc}</p>${sk.note?`<p class="rk">${sk.note}</p>`:""}${ranks}${st}
