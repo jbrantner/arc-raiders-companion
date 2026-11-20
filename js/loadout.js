@@ -4,7 +4,9 @@
 const D = window.LOADOUT_DATA;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
-const IMG = id => "https://cdn.arctracker.io/items/v2/" + encodeURIComponent(id) + ".png";
+const ICONS = window.ITEM_ICONS || {};
+/* bundled picture when we have one (icons/items), otherwise ArcTracker's image server */
+const IMG = id => ICONS[id] ? "icons/items/" + ICONS[id] + ".webp?v=1" : "https://cdn.arctracker.io/items/v2/" + encodeURIComponent(id) + ".png";
 const img = (id, cls) => `<img loading="lazy" alt=""${cls ? ` class="${cls}"` : ""} src="${IMG(id)}" onerror="this.remove()">`;
 const fmt = n => n >= 10000 ? (Math.round(n / 100) / 10) + "k" : String(Math.round(n));
 const kg = n => (Math.round(n * 10) / 10).toFixed(1).replace(/\.0$/, "");
