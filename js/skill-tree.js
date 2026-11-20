@@ -65,11 +65,20 @@ function tryChange(id,delta){
 }
 
 /* ---------- layout: like the game, Mobility straight up the middle, Conditioning curving left, Survival right ---------- */
-const W=1600, H=910, ROOT=[800,910];
+let W=1600, H=910;
+const phoneMQ = matchMedia("(max-width: 760px)");
+// phone layout: three upright branches side by side, same size, swiped like a carousel
+const PW=430, PH=880, PBASE=790, PTOP=62;
+const PCX={c:PW/2, m:PW*1.5, s:PW*2.5};
 // local layout per branch: u = -1..1 across, v = 0..1 up the branch
 const LOC = {st:[0,0],eh0:[-.72,.14],et0:[-.72,.28],eh1:[.72,.14],et1:[.72,.28],H1:[0,.36],ch0:[-.48,.47],ch1:[.48,.47],
   H2:[0,.56],lh0:[-1,.66],lt0:[-1,.79],lh1:[0,.66],lt1:[0,.79],lh2:[1,.66],lt2:[1,.79],H3:[0,.87],en0:[-.82,1],en1:[0,1],en2:[.82,1]};
-const GEO={
+const GEO_PHONE={
+  c:{base:[PCX.c,PBASE],a:0,L:680,w:140,bend:0},
+  m:{base:[PCX.m,PBASE],a:0,L:680,w:140,bend:0},
+  s:{base:[PCX.s,PBASE],a:0,L:680,w:140,bend:0}
+};
+const GEO_DESK={
   c:{base:[640,750],a:-52,L:640,w:130,bend:.09},
   m:{base:[800,750],a:0,L:680,w:140,bend:0},
   s:{base:[960,750],a:52,L:640,w:130,bend:-.09}
@@ -77,6 +86,11 @@ const GEO={
 const EDGES = [["st","eh0"],["st","eh1"],["eh0","et0"],["eh1","et1"],["et0","H1"],["et1","H1"],["H1","ch0"],["H1","ch1"],
   ["ch0","H2"],["ch1","H2"],["H2","lh0"],["H2","lh1"],["H2","lh2"],["lh0","lt0"],["lh1","lt1"],["lh2","lt2"],
   ["lt0","H3"],["lt1","H3"],["lt2","H3"],["H3","en0"],["H3","en1"],["H3","en2"]];
+let GEO=GEO_DESK, isPhoneLayout=false;
+function setLayout(){
+  isPhoneLayout=phoneMQ.matches;
+  GEO=isPhoneLayout?GEO_PHONE:GEO_DESK; W=isPhoneLayout?PW*3:1600; H=isPhoneLayout?PH:910;
+}
 function pt(b,u,v){
   const G=GEO[b]; const a=(G.a + G.bend*v*v*100)*Math.PI/180; // branches curl slightly outward as they rise
   return [G.base[0]+v*G.L*Math.sin(a)+u*G.w*Math.cos(a), G.base[1]-v*G.L*Math.cos(a)+u*G.w*Math.sin(a)];
@@ -98,16 +112,19 @@ let showNames=false; try{showNames=localStorage.getItem(NAMES_KEY)==="1";}catch(
 const isGateSlot = slot => slot.startsWith("ch")||slot.startsWith("en");
 
 function build(){
+  setLayout();
+  field.style.setProperty("--fw",W+"px"); field.style.setProperty("--fh",H+"px");
   let svg=`<svg class="wires" viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs><filter id="gl" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
   const trunkStart={c:[784,H+20],m:[800,H+20],s:[816,H+20]};
   for(const b of ["c","m","s"]){
     const [bx,by]=P(b,"st"), [rx,ry]=trunkStart[b];
-    svg+=`<path class="e trunk ${b}" data-trunk="${b}" d="M${rx},${ry} C${rx},${ry-70} ${bx+(b==="m"?0:(b==="c"?60:-60))},${by+60} ${bx},${by}"/>`;
+    svg+= isPhoneLayout ? `<path class="e trunk ${b}" data-trunk="${b}" d="M${bx},${H+20} L${bx},${by}"/>`
+      : `<path class="e trunk ${b}" data-trunk="${b}" d="M${rx},${ry} C${rx},${ry-70} ${bx+(b==="m"?0:(b==="c"?60:-60))},${by+60} ${bx},${by}"/>`;
     EDGES.forEach(([a,z],i)=>{svg+=`<path class="e ${b}" data-e="${b}${i}" d="${curve(b,a,z)}"/>`;});
   }
   svg+="</svg>";
   let html=svg;
-  const LAB={c:[455,865],m:[800,642],s:[1145,865]};
+  const LAB=isPhoneLayout?{c:[PCX.c,PBASE-108],m:[PCX.m,PBASE-108],s:[PCX.s,PBASE-108]}:{c:[455,865],m:[800,642],s:[1145,865]};
   for(const b of ["c","m","s"]){
     html+=`<div class="blab" data-b="${b}" style="${pc(LAB[b])}"><span>${BR[b].name.toUpperCase()}</span><b data-bt="${b}">0</b><small data-bl="${b}"></small></div>`;
     html+=`<span class="gate" data-b="${b}" data-g10="${b}" style="${pc(P(b,"H1"))}">10</span>`;
@@ -280,27 +297,35 @@ $("#loadCode").addEventListener("click",()=>{
   state=d.s; isExample=false; setMsg("Build loaded.",true); render();
 });
 
-/* ---------- phones: show one branch at a time, scaled to the screen width ---------- */
-const phoneMQ = matchMedia("(max-width: 760px)");
+/* ---------- phones: one screen, branches side by side at one size, swipe between them ---------- */
 const VIEW_KEY = "arcPlannerView";
-const CROPS = {c:[55,150,765,910], m:[560,20,1040,910], s:[835,150,1545,910], all:[0,0,1600,910]};
 let view = "m"; try{ view = localStorage.getItem(VIEW_KEY) || "m"; }catch(e){}
 const tabs = $("#tabs");
 let cur={tx:0,ty:0,k:1};
+const extras=$("#extras"), extrasTools=$("#extrasTools"), header=$(".bar");
+const movable=[$("#availMax").closest(".stat"), $(".tools")];
+const homes=movable.map(el=>({el,parent:el.parentNode,next:el.nextSibling}));
+function placeTools(phone){
+  if(phone){ movable.forEach(el=>extrasTools.appendChild(el)); }
+  else homes.forEach(h=>h.parent.insertBefore(h.el,h.next&&h.next.parentNode===h.parent?h.next:null));
+}
+let wasPhone=null;
 function applyView(){
   const phone = phoneMQ.matches;
-  document.body.classList.toggle("phone", phone);
-  tabs.hidden = !phone;
-  if(!phone){ delete document.body.dataset.focus; field.style.removeProperty("--tf"); field.parentElement.style.removeProperty("--vh"); return; }
-  if(!CROPS[view]) view="m";
-  const [x0,y0,x1,y1] = CROPS[view];
-  const sc = field.parentElement, w = sc.clientWidth || innerWidth;
-  const k = w/(x1-x0);
-  cur={tx:-x0*k,ty:-y0*k,k};
+  if(phone!==wasPhone){
+    wasPhone=phone;
+    document.body.classList.toggle("phone", phone);
+    tabs.hidden = !phone; placeTools(phone); setMenu(false);
+    selected=null; hideTip(); build(); render();
+  }
+  document.documentElement.style.setProperty("--barh", header.offsetHeight+"px");
+  if(!phone){ delete document.body.dataset.focus; field.style.removeProperty("--tf"); return; }
+  if(!PCX[view]) view="m";
+  const sc=field.parentElement, w=sc.clientWidth||innerWidth, h=sc.clientHeight||innerHeight*.7;
+  const k=Math.min(w/490, h/(PH-PTOP));
+  cur={tx:w/2-PCX[view]*k, ty:-PTOP*k+Math.max(0,(h-(PH-PTOP)*k)/2), k};
   field.style.setProperty("--tf", `translate(${cur.tx.toFixed(1)}px,${cur.ty.toFixed(1)}px) scale(${k.toFixed(4)})`);
   document.body.dataset.focus=view;
-  sc.style.setProperty("--vh", `${Math.round((y1-y0)*k)}px`);
-  document.body.classList.toggle("view-all", view==="all");
   tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected", b.dataset.v===view));
 }
 function setView(v){
@@ -309,18 +334,24 @@ function setView(v){
   applyView();
 }
 tabs.addEventListener("click",e=>{const b=e.target.closest("[data-v]"); if(b) setView(b.dataset.v);});
-// in the overview, tapping a branch zooms into it
-field.parentElement.addEventListener("click",e=>{
-  if(!document.body.classList.contains("view-all")) return;
-  const r=field.parentElement.getBoundingClientRect(), fx=(e.clientX-r.left)/r.width;
-  setView(fx<.38?"c":fx>.62?"s":"m");
-});
+function setMenu(open){
+  document.body.classList.toggle("menu-open",open);
+  $("#menuBtn").setAttribute("aria-expanded",open);
+  if(open){ selected=null; hideTip(); render(); }
+}
+$("#menuBtn").addEventListener("click",()=>setMenu(!document.body.classList.contains("menu-open")));
+$("#menuDone").addEventListener("click",()=>setMenu(false));
+// tapping a dimmed neighbour branch brings it into focus instead of changing points
+field.addEventListener("click",e=>{
+  if(!phoneMQ.matches) return; const n=e.target.closest(".node");
+  if(n && n.dataset.b!==view){ e.stopImmediatePropagation(); setView(n.dataset.b); }
+},true);
 // carousel swipe: the tree follows your finger, then snaps to the next branch (or back)
 const ORDERV=["c","m","s"];
 let drag=null;
 const sc0=field.parentElement;
 sc0.addEventListener("touchstart",e=>{
-  if(!phoneMQ.matches||e.touches.length!==1||view==="all"){drag=null;return;}
+  if(!phoneMQ.matches||e.touches.length!==1){drag=null;return;}
   const t=e.touches[0]; drag={x:t.clientX,y:t.clientY,at:Date.now(),dx:0,lock:null};
 },{passive:true});
 sc0.addEventListener("touchmove",e=>{
@@ -347,11 +378,11 @@ sc0.addEventListener("touchcancel",endDrag,{passive:true});
 phoneMQ.addEventListener?.("change",applyView);
 addEventListener("resize",applyView);
 if(!hoverMode){
-  $("#help").innerHTML='<strong>Tap</strong> a skill, then use <strong>+</strong> and <strong>−</strong>. Use the tabs or swipe to switch branches. Forks open at 10 points (keep one of two); top skills at 30 and 40 (take two of three).';
+  $("#help").innerHTML='<strong>Tap</strong> a skill, then use <strong>+</strong> and <strong>−</strong>. Swipe or use the tabs to switch branches. Forks open at 10 points (keep one of two); top skills at 30 and 40 (take two of three).';
 }
 
 load();
 const hash=location.hash.match(/^#b=([\d-]+)$/);
 if(hash){const d=decode(hash[1]); if(!d.err){state=d.s; isExample=false; history.replaceState(null,"",location.pathname); setTimeout(()=>setMsg("Build loaded from link.",true));}}
-build(); render(); applyView();
+applyView();
 })();

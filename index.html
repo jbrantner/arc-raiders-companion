@@ -7,7 +7,7 @@
 <meta name="description" content="Plan your ARC Raiders 2.0 skill tree: Conditioning, Mobility and Survival.">
 <meta name="theme-color" content="#000000">
 <meta name="format-detection" content="telephone=no">
-<meta name="app-version" content="202611202133">
+<meta name="app-version" content="202611202135">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -18,7 +18,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/skill-tree.css?v=202611202133">
+<link rel="stylesheet" href="css/skill-tree.css?v=202611202135">
 </head>
 <body>
 <header class="bar">
@@ -32,6 +32,7 @@
     <div class="stat"><label class="lab" for="availMax">Points</label><input id="availMax" type="number" inputmode="numeric" min="0" max="200" value="86"></div>
     <div class="stat"><span class="lab">Left</span><span class="num" id="leftMax">86</span></div>
   </div>
+  <button class="btn menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="extras">Build</button>
   <div class="tools">
     <button class="btn" id="namesBtn" type="button" aria-pressed="false">Names</button>
     <button class="btn danger" id="resetAll" type="button">Clear</button>
@@ -49,9 +50,11 @@
     <button type="button" role="tab" data-v="c" style="--c:var(--cond)">Cond<span data-tt="c"></span></button>
     <button type="button" role="tab" data-v="m" style="--c:var(--mob)">Mobility<span data-tt="m"></span></button>
     <button type="button" role="tab" data-v="s" style="--c:var(--surv)">Survival<span data-tt="s"></span></button>
-    <button type="button" role="tab" data-v="all" style="--c:var(--fg)">All</button>
   </nav>
   <div class="scroller"><div class="field glow" id="field"></div></div>
+  <section class="extras" id="extras">
+  <div class="extras-hd"><h2>Your build</h2><button class="btn" id="menuDone" type="button">Done</button></div>
+  <div class="extras-tools" id="extrasTools"></div>
 
   <p class="help" id="help"><strong>Click</strong> a skill to add a point, <strong>right-click</strong> (or <kbd>Shift</kbd>+click) to take one back. Hover for details. Each branch's middle fork opens at 10 points (keep one of two), and its top three let you take two (first at 30 points, second at 40).</p>
 
@@ -66,13 +69,14 @@
     <button class="btn" id="loadCode" type="button">Load code</button>
   </div>
   <p class="help">Skill names, max ranks and per-rank values come from the 2.0 Frozen Trail game data as reported by the community wiki, checked against patch notes through 2.6.0 (Nov 17, 2026). The links between skills follow community planners, so double-check a node in game before you spend a reset on it.</p>
+  </section>
 </div>
 
 <button class="update" id="updateBtn" type="button" hidden>Update available · tap to update</button>
 <div class="tip" id="tip" hidden></div>
-<script src="js/skill-data.js?v=202611202133"></script>
-<script src="js/icons.js?v=202611202133"></script>
-<script src="js/skill-tree.js?v=202611202133"></script>
-<script src="js/update-check.js?v=202611202133"></script>
+<script src="js/skill-data.js?v=202611202135"></script>
+<script src="js/icons.js?v=202611202135"></script>
+<script src="js/skill-tree.js?v=202611202135"></script>
+<script src="js/update-check.js?v=202611202135"></script>
 </body>
 </html>
