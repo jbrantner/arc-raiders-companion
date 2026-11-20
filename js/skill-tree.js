@@ -192,7 +192,12 @@ function render(){
   save();
 }
 
-function setMsg(t,ok){const m=$("#msg"); m.textContent=t||""; m.className="msg"+(ok?" ok":"");}
+let msgTimer=null;
+function setMsg(t,ok){
+  const m=$("#msg"); m.textContent=t||""; m.className="msg"+(ok?" ok":"");
+  clearTimeout(msgTimer); if(t) msgTimer=setTimeout(()=>{m.textContent="";}, ok?2500:4500);
+}
+$("#msg").addEventListener("click",()=>{clearTimeout(msgTimer); $("#msg").textContent="";});
 function change(id,delta){
   const res=tryChange(id,delta);
   if(res.err){setMsg(res.err,false); return;}
@@ -260,6 +265,13 @@ if(hoverMode){
   $("#help").innerHTML='<strong>Tap</strong> a skill to see what it does, then use <strong>+</strong> and <strong>−</strong> to add or remove points. Swipe sideways to see the whole tree. Each branch\'s middle fork opens at 10 points (keep one of two), and its top three let you take two (first at 30 points, second at 40).';
 }
 addEventListener("scroll",()=>{if(hoverMode&&hovering) place(hovering);},{passive:true});
+// touch: a tap anywhere that isn't a skill or the sheet closes the skill sheet
+document.addEventListener("click",e=>{
+  if(hoverMode||!selected) return;
+  // composedPath is fixed at dispatch, so it still holds the sheet even after + / − re-render it
+  if(e.composedPath().some(el=>el===tip||(el.classList&&el.classList.contains("node")))) return;
+  selected=null; hideTip(); render();
+});
 
 $("#namesBtn").addEventListener("click",()=>{showNames=!showNames; try{localStorage.setItem(NAMES_KEY,showNames?"1":"0");}catch(e){} field.classList.toggle("shownames",showNames); $("#namesBtn").setAttribute("aria-pressed",showNames);});
 $("#resetAll").addEventListener("click",()=>{state={}; isExample=false; selected=null; hideTip(); setMsg("All points cleared.",true); render();});
