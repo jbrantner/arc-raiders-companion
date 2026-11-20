@@ -155,10 +155,11 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!sheet
 let P = null;
 function picker(opts){
   P = Object.assign({ cat: "all", q: "", own: false }, opts);
-  openSheet(`<div class="hd">${P.back ? `<button class="abtn" type="button" data-act="back">Back</button>` : ""}<h3>${esc(P.title)}</h3>${P.onRemove ? `<button class="abtn danger" type="button" data-act="remove">Remove</button>` : ""}<button class="abtn" type="button" data-act="close">Done</button></div>
+  openSheet(`<div class="hd">${P.back ? `<button class="abtn" type="button" data-act="back">Back</button>` : ""}<h3>${esc(P.title)}</h3><button class="abtn" type="button" data-act="close">Done</button></div>
     ${P.items.length > 10 ? `<input type="search" id="pq" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search">` : ""}
     <div class="chips" id="pcats">${(P.cats || []).map(([k, l]) => `<button type="button" data-cat="${k}" aria-pressed="${k === P.cat}">${l}</button>`).join("")}${hasStash() ? `<button type="button" data-own="1" aria-pressed="false" style="--c:var(--keep)">Owned</button>` : ""}</div>
-    <ul class="plist" id="plist"></ul>`);
+    <ul class="plist" id="plist"></ul>
+    ${P.onRemove ? `<div class="row"><button class="abtn danger grow" type="button" data-act="remove">Remove from this slot</button></div>` : ""}`);
   if (!P.cats && !hasStash()) $("#pcats").remove();
   fillPicker();
 }
@@ -167,7 +168,7 @@ function fillPicker(){
   P.items.filter(x => (P.cat === "all" || catOf(x.it) === P.cat) && (!q || x.it.n.toLowerCase().includes(q)) && (!P.own || x.owned > 0)).forEach(x => {
     if (x.group && x.group !== last) { html += `<li class="h">${esc(x.group)}</li>`; last = x.group; }
     const o = hasStash() ? (x.owned > 0 ? `<span class="tag">Have ${x.owned}</span>` : `<span class="tag no">None</span>`) : "";
-    html += `<li class="pi${x.off ? " off" : ""}${x.it.id === P.cur ? " sel" : ""}" data-id="${esc(x.it.id)}" data-r="${esc(x.it.r)}"><div class="pic">${img(x.img || x.it.id)}</div><div class="nm">${esc(x.it.n)}</div><div class="vd">${o}<small>${x.right ?? (x.it.w != null ? kg(x.it.w) + " kg" : "")}</small></div><div class="sub">${esc(x.off || x.sub || "")}</div></li>`;
+    html += `<li class="pi${x.off ? " off" : ""}${x.it.id === P.cur ? " sel" : ""}" data-id="${esc(x.it.id)}" data-r="${esc(x.it.r)}"><div class="pic">${img(x.img || x.it.id)}</div><div class="nm">${esc(x.it.n)}</div><div class="vd">${o}<small>${x.right ?? (x.it.w != null ? kg(x.it.w) + " kg" : "")}</small></div><div class="sub">${esc(x.off || x.sub || "")}</div>${x.d ? `<div class="ds">${esc(x.d)}</div>` : ""}</li>`;
   });
   $("#plist").innerHTML = html || `<li class="h">Nothing matches.</li>`;
 }
@@ -185,38 +186,85 @@ sheet.addEventListener("click", e => {
   if (b.dataset.tier) return setTier(b.dataset.tier);
   if (b.dataset.up) return toggleUp(+b.dataset.up);
   if (b.dataset.q) return setQty((CFG.cell ? CFG.cell.q : 1) + +b.dataset.q);
-  if (b.classList.contains("mod")) { if (b.classList.contains("lock")) return toast(`${b.getAttribute("aria-label")}.`); return pickMod(CFG.i, b.dataset.s, true); }
+  if (b.classList.contains("mod")) { if (b.classList.contains("lock")) return toast(`${b.getAttribute("aria-label")}.`); const i = CFG.i, back = () => weaponSheet(i); return L.w[i].m[b.dataset.s] ? modInfo(i, b.dataset.s, back) : pickMod(i, b.dataset.s, back); }
 });
+
+/* effect rows like ["Reduced Noise","60%"] -> "60% less noise" */
+const fxText = e => !e[1] ? e[0] : /^[+-]/.test(e[1]) ? `${e[1]} ${e[0].toLowerCase()}` : `${e[1]} ${e[0].replace(/^(Reduced|Increased) /, (x, y) => y === "Reduced" ? "less " : "more ").toLowerCase()}`;
+const fitsOf = id => D.weapons.filter(w => Object.values(w.slots).some(l => l.includes(id))).map(w => w.n);
+
+/* what an augment, shield or mod does, with Change / Remove. o: it, meta, desc, does[], kv[[k,v]], warn, onChange, onRemove, back */
+function infoSheet(o){
+  const it = o.it; P = { back: o.back, items: [] }; CFG = null;
+  const kv = (o.kv || []).filter(r => r && r[1] !== "" && r[1] != null);
+  openSheet(`<div class="hd">${o.back ? `<button class="abtn" type="button" data-act="back">Back</button>` : ""}<div class="pic">${img(it.id)}</div><div style="flex:1 1 auto;min-width:0"><h3>${esc(it.n)}</h3><div class="meta">${esc(o.meta)}</div></div><button class="abtn" type="button" data-act="close">Done</button></div>
+    ${o.warn ? `<p class="warnp">${esc(o.warn)}</p>` : ""}
+    ${o.desc ? `<p>${esc(o.desc)}</p>` : ""}
+    ${o.does && o.does.length ? `<div class="slab">What it does</div><ul class="does">${o.does.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+    ${kv.length ? `<dl class="kv">${kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}
+    <div class="row"><button class="abtn grow" type="button" id="infChg">Change</button>${o.onRemove ? `<button class="abtn danger grow" type="button" id="infRm">Remove</button>` : ""}</div>`, it.r);
+  $("#infChg").onclick = o.onChange;
+  if (o.onRemove) $("#infRm").onclick = o.onRemove;
+}
+const stashRow = id => hasStash() ? ["In stash", String(have(id))] : null;
+function augDoes(a){
+  const d = [];
+  if (a.p) d.push(a.p);
+  d.push(`${a.bp} backpack slots, ${a.q} quick use slots${a.sp ? `, ${a.sp} safe pocket slot${a.sp > 1 ? "s" : ""}` : ", no safe pocket"}.`);
+  (a.x || []).forEach(([t, n]) => d.push(`${n} extra ${XLAB[t].toLowerCase()} slot${n > 1 ? "s" : ""}${t === "utility" ? " (traps, mines, ziplines and gadgets)" : t === "heal" ? " (healing and shield items)" : t === "grenade" ? " (grenades)" : " (trinkets)"}.`));
+  d.push(`Carries up to ${a.kg} kg and a ${a.sh.split("").map(k => SHK[k]).join(", ").replace(/, ([^,]*)$/, " or $1")} Shield.`);
+  return d;
+}
+function augInfo(back){
+  const a = ITEM[L.aug]; if (!a) return pickAug();
+  infoSheet({ it: a, back, meta: `${a.r} · Augment`, desc: a.d, does: augDoes(a),
+    kv: [["Weight", kg(a.w) + " kg"], ["Value", fmt(a.v)], stashRow(a.id)],
+    onChange: () => pickAug(() => augInfo(back)), onRemove: () => setAug("") });
+}
+function shieldInfo(){
+  const s = ITEM[L.shield]; if (!s) return pickShield(); const c = caps();
+  infoSheet({ it: s, meta: `${s.r} · Shield`, desc: s.d, warn: c.sh.includes(s.k) ? "" : `${aug().n} can't use a ${SHK[s.k]} Shield. Pick another shield or augment.`,
+    does: [`Absorbs ${s.dr} of incoming damage until its ${s.ch} charge runs out.`, s.ms ? `Slows you down by ${s.ms}.` : "No movement penalty."],
+    kv: [["Charge", s.ch], ["Blocks", s.dr], ["Speed", s.ms ? "−" + s.ms : "Full"], ["Weight", kg(s.w) + " kg"], ["Value", fmt(s.v)], stashRow(s.id)],
+    onChange: () => pickShield(() => shieldInfo()), onRemove: () => { L.shield = ""; closeSheet(); render(); } });
+}
+function modInfo(i, s, back){
+  const W = L.w[i], m = ITEM[W.m[s]]; if (!m) return pickMod(i, s, back);
+  const lab = SLOTS.find(x => x[0] === s)[1];
+  infoSheet({ it: m, back, meta: `${m.r} · ${lab} mod`, desc: m.d, does: m.fx.map(fxText),
+    kv: [["Fits", fitsOf(m.id).join(", ")], ["Weight", kg(m.w) + " kg"], ["Value", fmt(m.v)], stashRow(m.id)],
+    onChange: () => pickMod(i, s, () => modInfo(i, s, back)), onRemove: () => { delete W.m[s]; render(); back ? back() : closeSheet(); } });
+}
 
 /* ---------- main screen taps ---------- */
 $("#main").addEventListener("click", e => {
   const b = e.target.closest("[data-k]"); if (!b) return;
   const k = b.dataset.k, i = +b.dataset.i;
-  if (k === "aug") return pickAug();
-  if (k === "shield") return pickShield();
+  if (k === "aug") return L.aug ? augInfo() : pickAug();
+  if (k === "shield") return L.shield ? shieldInfo() : pickShield();
   if (k === "weap") return L.w[i] ? weaponSheet(i) : pickWeapon(i);
-  if (k === "mod") { if (b.classList.contains("lock")) return toast(`${b.getAttribute("aria-label")}.`); return pickMod(i, b.dataset.s); }
+  if (k === "mod") { if (b.classList.contains("lock")) return toast(`${b.getAttribute("aria-label")}.`); return L.w[i].m[b.dataset.s] ? modInfo(i, b.dataset.s) : pickMod(i, b.dataset.s); }
   if (["q", "sp", "x", "bp"].includes(k)) { const v = L[k][i]; return v ? cellSheet(k, i) : pickCell(k, i); }
 });
 $("#nameBtn").addEventListener("click", () => openPanel(true));
 
-function pickAug(){
-  picker({ title: "Augment", cur: L.aug,
+function pickAug(back){
+  picker({ title: "Augment", cur: L.aug, back,
     items: D.augments.slice().sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true })).map(a => ({ it: ITEM[a.id], owned: have(a.id), group: a.id.split("_")[0].replace(/^\w/, c => c.toUpperCase()).replace("Free", "Basic"),
-      sub: `${a.bp} bag · ${a.q} quick · ${a.sp} safe${(a.x || []).map(([t, n]) => ` · ${n} ${t}`).join("")} · ${a.sh.split("").join("/")} shield`, right: a.kg + " kg max" })),
-    onRemove: L.aug ? () => setAug("") : null, onPick: id => setAug(id) });
+      sub: `${a.bp} bag · ${a.q} quick · ${a.sp} safe${(a.x || []).map(([t, n]) => ` · ${n} ${t}`).join("")} · ${a.sh.split("").join("/")} shield`, right: a.kg + " kg max", d: a.p || a.d })),
+    onRemove: L.aug ? () => setAug("") : null, onPick: id => { setAug(id, true); augInfo(); } });
 }
-function setAug(id){
+function setAug(id, keepOpen){
   L.aug = id; const lost = fit(); const s = ITEM[L.shield], c = caps();
-  closeSheet(); render();
+  if (!keepOpen) closeSheet(); render();
   const msg = [lost ? `${lost} item${lost > 1 ? "s" : ""} didn't fit and came out` : "", s && !c.sh.includes(s.k) ? `${aug().n} can't use a ${SHK[s.k]} Shield` : ""].filter(Boolean).join(". ");
   if (msg) toast(msg + ".", true);
 }
-function pickShield(){
+function pickShield(back){
   const c = caps();
-  picker({ title: "Shield", cur: L.shield,
-    items: D.shields.map(s => ({ it: ITEM[s.id], owned: have(s.id), sub: `${s.ch} charge · ${s.dr} damage blocked${s.ms ? ` · ${s.ms} slower` : ""}`, off: c.sh.includes(s.k) ? "" : `Your augment can't use a ${SHK[s.k]} Shield` })),
-    onRemove: L.shield ? () => { L.shield = ""; closeSheet(); render(); } : null, onPick: id => { L.shield = id; closeSheet(); render(); } });
+  picker({ title: "Shield", cur: L.shield, back,
+    items: D.shields.map(s => ({ it: ITEM[s.id], owned: have(s.id), sub: `${s.ch} charge · ${s.dr} damage blocked${s.ms ? ` · ${s.ms} slower` : ""}`, off: c.sh.includes(s.k) ? "" : `Your augment can't use a ${SHK[s.k]} Shield`, d: s.d })),
+    onRemove: L.shield ? () => { L.shield = ""; closeSheet(); render(); } : null, onPick: id => { L.shield = id; render(); shieldInfo(); } });
 }
 
 /* weapons */
@@ -226,7 +274,7 @@ function pickWeapon(i, back){
     cats: [["all", "All"]].concat([...new Set(D.weapons.map(w => w.t))].map(t => [t, t.replace("Assault Rifle", "AR").replace("Battle Rifle", "BR").replace("Sniper Rifle", "Sniper").replace("Hand Cannon", "Hand cannon")])),
     items: D.weapons.map(w => { const top = w.tiers.find(t => t[0] === "iv") || w.tiers[0];
       return { it: Object.assign({}, ITEM[w.tiers[0][1]], { id: w.tiers[0][1], n: w.n, kind: w.t, r: top[2] }), img: top[1], group: w.t, owned: famOwned(w.id),
-        sub: [w.ammo, w.mode, w.tiers.some(t => t[0] === "amp") ? "Amplifiable" : ""].filter(Boolean).join(" · "), right: kg(top[3]) + " kg", f: w.id }; }),
+        sub: [w.ammo, w.mode, w.tiers.some(t => t[0] === "amp") ? "Amplifiable" : ""].filter(Boolean).join(" · "), right: kg(top[3]) + " kg", f: w.id, d: w.d }; }),
     onRemove: L.w[i] ? () => { L.w[i] = null; closeSheet(); render(); } : null,
     onPick: id => { const f = D.weapons.find(w => w.tiers[0][1] === id); const old = L.w[i];
       const t = bestTier(f); L.w[i] = { f: f.id, t, u: [], m: {} };
@@ -264,13 +312,12 @@ function toggleUp(j){
   render(); weaponSheet(CFG.i);
 }
 function setTier(t){ const W = L.w[CFG.i]; W.t = t; if (t !== "amp") W.u = []; render(); weaponSheet(CFG.i); }
-function pickMod(i, s, fromCfg){
+function pickMod(i, s, back){
   const W = L.w[i], f = WEAP[W.f], lab = SLOTS.find(x => x[0] === s)[1];
-  const back = () => weaponSheet(i);
-  picker({ title: `${f.n} · ${lab}`, cur: W.m[s], back: fromCfg ? back : null,
-    items: f.slots[s].map(id => ITEM[id]).filter(Boolean).map(m => ({ it: m, owned: have(m.id), sub: m.fx.map(e => e[1] ? `${e[1]} ${e[0].replace(/^(Reduced|Increased) /, (x, y) => y === "Reduced" ? "less " : "more ").toLowerCase()}` : e[0]).join(" · ") })),
-    onRemove: W.m[s] ? () => { delete W.m[s]; render(); fromCfg ? back() : closeSheet(); } : null,
-    onPick: id => { W.m[s] = id; render(); fromCfg ? back() : closeSheet(); } });
+  picker({ title: `${f.n} · ${lab}`, cur: W.m[s], back,
+    items: f.slots[s].map(id => ITEM[id]).filter(Boolean).map(m => ({ it: m, owned: have(m.id), sub: m.fx.map(fxText).join(" · "), d: m.d })),
+    onRemove: W.m[s] ? () => { delete W.m[s]; render(); const wb = () => weaponSheet(i); back ? wb() : closeSheet(); } : null,
+    onPick: id => { W.m[s] = id; render(); modInfo(i, s, back ? () => weaponSheet(i) : null); } });
 }
 
 /* item cells */
@@ -284,7 +331,7 @@ function pickCell(k, i, back){
   const list = pool(k, i), cur = L[k][i];
   const cats = k === "q" ? QCATS : k === "x" ? null : BCATS;
   picker({ title: where(k, i), cur: cur && cur.id, back, cats,
-    items: list.sort((a, b) => CORD.indexOf(catOf(a)) - CORD.indexOf(catOf(b)) || a.n.replace(/\W/g, "").localeCompare(b.n.replace(/\W/g, ""))).map(it => ({ it, owned: have(it.id), sub: [it.kind === "quick" ? it.c.replace(/^\w/, c => c.toUpperCase()) : it.kind === "mod" ? "Mod" : it.kind === "ammo" ? "Ammo" : it.kind === "trinket" ? "Trinket" : "", it.s > 1 ? `stack ${it.s}` : "", it.d || ""].filter(Boolean).join(" · ") })),
+    items: list.sort((a, b) => CORD.indexOf(catOf(a)) - CORD.indexOf(catOf(b)) || a.n.replace(/\W/g, "").localeCompare(b.n.replace(/\W/g, ""))).map(it => ({ it, owned: have(it.id), sub: [it.kind === "quick" ? it.c.replace(/^\w/, c => c.toUpperCase()) : it.kind === "mod" ? "Mod" : it.kind === "ammo" ? "Ammo" : it.kind === "trinket" ? "Trinket" : "", it.s > 1 ? `stack ${it.s}` : ""].filter(Boolean).join(" · "), d: it.d || (it.fx ? it.fx.map(fxText).join(" · ") : "") })),
     onRemove: cur ? () => { L[k][i] = null; closeSheet(); render(); } : null,
     onPick: id => { const it = ITEM[id]; const n = hasStash() && have(id) ? Math.min(it.s || 1, have(id)) : (it.s || 1); L[k][i] = { id, q: n }; render(); cellSheet(k, i); } });
 }
@@ -293,7 +340,8 @@ function cellSheet(k, i){
   P = { items: [] };
   openSheet(`<div class="hd"><div class="pic">${img(it.id)}</div><div style="flex:1 1 auto;min-width:0"><h3>${esc(it.n)}</h3><div class="meta">${esc(it.r)} · ${esc(where(k, i))}</div></div><button class="abtn" type="button" data-act="close">Done</button></div>
     ${it.d ? `<p>${esc(it.d)}</p>` : ""}
-    ${it.fx ? `<p class="fine" style="margin:0">${esc(it.fx.map(e => e.join(" ")).join(" · "))}</p>` : ""}
+    ${it.fx && it.fx.length ? `<div class="slab">What it does</div><ul class="does">${it.fx.map(e => `<li>${esc(fxText(e))}</li>`).join("")}</ul>` : ""}
+    ${!it.d && !(it.fx && it.fx.length) ? `<p class="fine" style="margin:0">No description for this item in the game data yet.</p>` : ""}
     ${(it.s || 1) > 1 ? `<div class="qty"><button type="button" data-q="-1" aria-label="One less">−</button><input id="qtyIn" type="number" inputmode="numeric" min="1" max="${it.s}" value="${v.q}" aria-label="How many"><button type="button" data-q="1" aria-label="One more">+</button></div>` : ""}
     <dl class="kv"><dt>Stack</dt><dd>${it.s || 1}</dd><dt>Weight</dt><dd id="cw">${kg((it.w || 0) * v.q)} kg</dd>${hasStash() ? `<dt>In stash</dt><dd>${have(it.id)}</dd>` : ""}</dl>
     <div class="row"><button class="abtn grow" type="button" id="chgC">Swap</button><button class="abtn danger grow" type="button" id="rmC">Remove</button></div>`, it.r);
