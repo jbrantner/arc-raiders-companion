@@ -21,6 +21,9 @@
   // tidy the ?v= off the address once the fresh page has loaded
   if (/[?&]v=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash);
   check();
+  // home-screen apps on iOS resume from memory instead of reloading, so check on every return
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
+  addEventListener("pageshow", check);
+  addEventListener("focus", check);
   setInterval(check, 5 * 60 * 1000);
 })();
