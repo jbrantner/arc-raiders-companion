@@ -205,6 +205,48 @@ body.phone .extras-tools{display:flex;flex-wrap:wrap;align-items:center;justify-
 body.phone .extras .sectlab{margin:6px 0 8px}
 body.phone .tip.sheet{z-index:24}
 
+/* ---------- phones: angular look (square skills, diamond forks/tops, straight lines) ---------- */
+.cnt{display:none}
+body.phone .tabs button,body.phone .btn,body.phone .ctl button{border-radius:4px}
+body.phone .tip.sheet{border-radius:6px}
+body.phone .blab,body.phone .e.trunk,body.phone .node .pill,body.phone .node .lock{display:none!important}
+body.phone .glow .e.lit{filter:none}
+body.phone .e{stroke-width:2.5;stroke:#353a44;stroke-linecap:square}
+body.phone .e.lit{stroke-width:4}
+body.phone .node{--d:52px}
+body.phone .node.gnode{--d:46px}
+body.phone .node button{border-radius:7px;border:2px solid #353a44;background:#1a1d24;color:#5f6570;box-shadow:none}
+body.phone .node button svg{display:none}
+body.phone .cnt{display:block;font-family:var(--mono);font-weight:500;font-size:19px;line-height:1}
+body.phone .node.gnode button{transform:rotate(45deg);border-radius:5px}
+body.phone .node.gnode .cnt{transform:rotate(-45deg);font-size:17px}
+body.phone .node.gnode button:active{transform:rotate(45deg) scale(.93)}
+body.phone .node.open button{border-color:color-mix(in srgb,var(--c) 70%,transparent);background:#14171d;color:var(--fg);box-shadow:none}
+body.phone .node.partial button{border-color:var(--c);background:color-mix(in srgb,var(--c) 26%,#16181d);color:var(--fg);box-shadow:none}
+body.phone .node.maxed button{border-color:var(--c);background:var(--c);color:#000;box-shadow:none}
+body.phone .node.closed button{opacity:.22}
+body.phone .node.closed .nm{opacity:.35}
+body.phone .node.sel button{outline:2px solid var(--fg);outline-offset:4px}
+body.phone .nm{display:block;width:150px;font-size:16px;line-height:1.12;color:var(--muted);transform:translate(-50%,6px)}
+body.phone .node.gnode .nm{transform:translate(-50%,14px);width:122px}
+body.phone .node.open .nm{color:#c9ced6}
+body.phone .node.partial .nm,body.phone .node.maxed .nm{color:var(--fg)}
+body.phone .gate{font-size:16px;border-radius:3px;padding:2px 7px;border:1.5px solid #3a3f4a;color:#6c727d;background:#0b0c10}
+body.phone .gate.hit{border-color:var(--c,#fff);color:var(--c,#fff)}
+body.phone .gate[data-b=c]{--c:var(--cond)} body.phone .gate[data-b=m]{--c:var(--mob)} body.phone .gate[data-b=s]{--c:var(--surv)}
+/* branch header */
+.branch-head{--c:var(--mob);padding:2px 2px 6px}
+.branch-head[data-b=c]{--c:var(--cond)} .branch-head[data-b=s]{--c:var(--surv)}
+.bh-top{display:flex;align-items:baseline;justify-content:space-between}
+.bh-top h2{margin:0;font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.05em;text-transform:uppercase;color:var(--c)}
+.bh-pts{font-family:var(--mono);font-size:15px;color:var(--muted)}
+.bh-pts b{font-family:var(--display);font-size:26px;font-weight:600;color:var(--fg);margin-right:2px}
+.bh-bar{position:relative;height:6px;border-radius:2px;background:#22252c;margin:6px 0 18px}
+.bh-bar i{position:absolute;left:0;top:0;bottom:0;background:var(--c);border-radius:2px;transition:width .3s}
+.bh-bar .tick{position:absolute;top:-4px;width:2px;height:14px;margin-left:-1px;background:#5a606b}
+.bh-bar .tick.hit{background:#fff}
+.bh-bar .tick em{position:absolute;top:15px;left:50%;transform:translateX(-50%);font-style:normal;font-family:var(--mono);font-size:11px;color:var(--muted)}
+
 /* page switch (Tree / Stash), same look on both pages */
 .pages{display:flex;border:1px solid var(--line-hi);flex:0 0 auto}
 .pages a{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:7px 11px;min-height:36px;display:flex;align-items:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}

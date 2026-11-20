@@ -68,15 +68,15 @@ function tryChange(id,delta){
 let W=1600, H=910;
 const phoneMQ = matchMedia("(max-width: 760px)");
 // phone layout: three upright branches side by side, same size, swiped like a carousel
-const PW=430, PH=880, PBASE=790, PTOP=62;
+const PW=430, PH=880, PBASE=800, PTOP=22;
 const PCX={c:PW/2, m:PW*1.5, s:PW*2.5};
 // local layout per branch: u = -1..1 across, v = 0..1 up the branch
-const LOC = {st:[0,0],eh0:[-.72,.14],et0:[-.72,.28],eh1:[.72,.14],et1:[.72,.28],H1:[0,.36],ch0:[-.48,.47],ch1:[.48,.47],
+const LOC_DESK = {st:[0,0],eh0:[-.72,.14],et0:[-.72,.28],eh1:[.72,.14],et1:[.72,.28],H1:[0,.36],ch0:[-.48,.47],ch1:[.48,.47],
   H2:[0,.56],lh0:[-1,.66],lt0:[-1,.79],lh1:[0,.66],lt1:[0,.79],lh2:[1,.66],lt2:[1,.79],H3:[0,.87],en0:[-.82,1],en1:[0,1],en2:[.82,1]};
 const GEO_PHONE={
-  c:{base:[PCX.c,PBASE],a:0,L:680,w:140,bend:0},
-  m:{base:[PCX.m,PBASE],a:0,L:680,w:140,bend:0},
-  s:{base:[PCX.s,PBASE],a:0,L:680,w:140,bend:0}
+  c:{base:[PCX.c,PBASE],a:0,L:735,w:140,bend:0},
+  m:{base:[PCX.m,PBASE],a:0,L:735,w:140,bend:0},
+  s:{base:[PCX.s,PBASE],a:0,L:735,w:140,bend:0}
 };
 const GEO_DESK={
   c:{base:[640,750],a:-52,L:640,w:130,bend:.09},
@@ -86,10 +86,14 @@ const GEO_DESK={
 const EDGES = [["st","eh0"],["st","eh1"],["eh0","et0"],["eh1","et1"],["et0","H1"],["et1","H1"],["H1","ch0"],["H1","ch1"],
   ["ch0","H2"],["ch1","H2"],["H2","lh0"],["H2","lh1"],["H2","lh2"],["lh0","lt0"],["lh1","lt1"],["lh2","lt2"],
   ["lt0","H3"],["lt1","H3"],["lt2","H3"],["H3","en0"],["H3","en1"],["H3","en2"]];
-let GEO=GEO_DESK, isPhoneLayout=false;
+// phone rows are evenly spaced so the names under each skill have room (units up from the base / 735)
+const pv=n=>n/735;
+const LOC_PHONE = {st:[0,0],eh0:[-.72,pv(110)],et0:[-.72,pv(220)],eh1:[.72,pv(110)],et1:[.72,pv(220)],H1:[0,pv(282)],ch0:[-.65,pv(345)],ch1:[.65,pv(345)],
+  H2:[0,pv(405)],lh0:[-1,pv(470)],lt0:[-1,pv(575)],lh1:[0,pv(470)],lt1:[0,pv(575)],lh2:[1,pv(470)],lt2:[1,pv(575)],H3:[0,pv(616)],en0:[-.82,1],en1:[0,1],en2:[.82,1]};
+let GEO=GEO_DESK, LOC=LOC_DESK, isPhoneLayout=false;
 function setLayout(){
   isPhoneLayout=phoneMQ.matches;
-  GEO=isPhoneLayout?GEO_PHONE:GEO_DESK; W=isPhoneLayout?PW*3:1600; H=isPhoneLayout?PH:910;
+  GEO=isPhoneLayout?GEO_PHONE:GEO_DESK; LOC=isPhoneLayout?LOC_PHONE:LOC_DESK; W=isPhoneLayout?PW*3:1600; H=isPhoneLayout?PH:910;
 }
 function pt(b,u,v){
   const G=GEO[b]; const a=(G.a + G.bend*v*v*100)*Math.PI/180; // branches curl slightly outward as they rise
@@ -120,18 +124,21 @@ function build(){
     const [bx,by]=P(b,"st"), [rx,ry]=trunkStart[b];
     svg+= isPhoneLayout ? `<path class="e trunk ${b}" data-trunk="${b}" d="M${bx},${H+20} L${bx},${by}"/>`
       : `<path class="e trunk ${b}" data-trunk="${b}" d="M${rx},${ry} C${rx},${ry-70} ${bx+(b==="m"?0:(b==="c"?60:-60))},${by+60} ${bx},${by}"/>`;
-    EDGES.forEach(([a,z],i)=>{svg+=`<path class="e ${b}" data-e="${b}${i}" d="${curve(b,a,z)}"/>`;});
+    EDGES.forEach(([a,z],i)=>{
+      const d = isPhoneLayout ? `M${P(b,a).map(n=>n.toFixed(1)).join(",")} L${P(b,z).map(n=>n.toFixed(1)).join(",")}` : curve(b,a,z);
+      svg+=`<path class="e ${b}" data-e="${b}${i}" d="${d}"/>`;});
   }
   svg+="</svg>";
   let html=svg;
   const LAB=isPhoneLayout?{c:[PCX.c,PBASE-108],m:[PCX.m,PBASE-108],s:[PCX.s,PBASE-108]}:{c:[455,865],m:[800,642],s:[1145,865]};
   for(const b of ["c","m","s"]){
     html+=`<div class="blab" data-b="${b}" style="${pc(LAB[b])}"><span>${BR[b].name.toUpperCase()}</span><b data-bt="${b}">0</b><small data-bl="${b}"></small></div>`;
-    html+=`<span class="gate" data-b="${b}" data-g10="${b}" style="${pc(P(b,"H1"))}">10</span>`;
-    html+=`<span class="gate" data-b="${b}" data-g30="${b}" style="${pc(P(b,"H3"))}">30 · 40</span>`;
+    const off=p=>p;
+    html+=`<span class="gate" data-b="${b}" data-g10="${b}" style="${pc(off(P(b,"H1")))}">${isPhoneLayout?"10 pts":"10"}</span>`;
+    html+=`<span class="gate" data-b="${b}" data-g30="${b}" style="${pc(off(P(b,"H3")))}">${isPhoneLayout?"30 · 40 pts":"30 · 40"}</span>`;
     ORDER.filter(id=>SK[id].b===b).forEach(id=>{
       const sk=SK[id]; const big=sk.slot==="st"||isGateSlot(sk.slot);
-      html+=`<div class="node ${big?"xl":"sm"}" data-b="${b}" data-id="${id}" style="${pc(P(b,sk.slot))}"><button type="button" aria-label="${sk.name}">${ARC.icon(sk.icon)}</button>${sk.max>1?`<span class="pill"></span>`:""}<span class="lock" hidden>${ARC.LOCK}</span><span class="nm">${sk.name}</span></div>`;
+      html+=`<div class="node ${big?"xl":"sm"}${isGateSlot(sk.slot)?" gnode":""}" data-b="${b}" data-id="${id}" style="${pc(P(b,sk.slot))}"><button type="button" aria-label="${sk.name}">${ARC.icon(sk.icon)}<span class="cnt"></span></button>${sk.max>1?`<span class="pill"></span>`:""}<span class="lock" hidden>${ARC.LOCK}</span><span class="nm">${sk.name}</span></div>`;
     });
   }
   field.innerHTML=html;
@@ -180,12 +187,14 @@ function render(){
       n.classList.add(cls); if(closed) n.classList.add("closed"); if(selected===id) n.classList.add("sel");
       n.querySelector(".lock").hidden=!(isGateSlot(sk.slot)&&cls==="locked"&&!closed);
       const p=n.querySelector(".pill"); if(p) p.textContent=`${rk}/${sk.max}`;
+      n.querySelector(".cnt").textContent=`${rk}/${sk.max}`;
     });
   }
   $("#summary").innerHTML=["c","m","s"].map(b=>{
     const items=ORDER.filter(id=>SK[id].b===b&&r(state,id)>0);
     return `<div class="sumcol" style="--c:var(--${{c:"cond",m:"mob",s:"surv"}[b]})"><h2>${BR[b].name} · ${branchTotal(state,b)}</h2>${items.length?`<ul>${items.map(id=>`<li><span>${SK[id].name}</span><span>${r(state,id)}/${SK[id].max}</span></li>`).join("")}</ul>`:`<div class="none">No points yet</div>`}</div>`;
   }).join("");
+  renderHead();
   $("#codeBox").value=encode();
   $("#exampleBox").hidden=!isExample;
   if(hovering) showTip(hovering); else if(selected) showTip(selected);
@@ -193,6 +202,18 @@ function render(){
 }
 
 let msgTimer=null;
+/* phone branch header: name, points / max and a progress bar with the 10 / 30 / 40 gates */
+function branchMax(b){
+  const sk=slot=>bySlot(b,slot).max;
+  return ["st","eh0","et0","eh1","et1","lh0","lt0","lh1","lt1","lh2","lt2"].reduce((a,x)=>a+sk(x),0)+Math.max(sk("ch0"),sk("ch1"))+2;
+}
+function renderHead(){
+  const el=$("#branchHead"); if(!el||!BR[view]) return;
+  const b=view, bt=branchTotal(state,b), mx=branchMax(b);
+  el.dataset.b=b;
+  el.innerHTML=`<div class="bh-top"><h2>${BR[b].name}</h2><span class="bh-pts"><b>${bt}</b> / ${mx}</span></div>
+    <div class="bh-bar"><i style="width:${Math.min(100,bt/mx*100).toFixed(1)}%"></i>${[10,30,40].map(t=>`<span class="tick${bt>=t?" hit":""}" style="left:${(t/mx*100).toFixed(1)}%"><em>${t}</em></span>`).join("")}</div>`;
+}
 function setMsg(t,ok){
   const m=$("#msg"); m.textContent=t||""; m.className="msg"+(ok?" ok":"");
   clearTimeout(msgTimer); if(t) msgTimer=setTimeout(()=>{m.textContent="";}, ok?2500:4500);
@@ -330,17 +351,18 @@ function applyView(){
   if(phone!==wasPhone){
     wasPhone=phone;
     document.body.classList.toggle("phone", phone);
-    tabs.hidden = !phone; placeTools(phone); setMenu(false);
+    tabs.hidden = !phone; $("#branchHead").hidden = !phone; placeTools(phone); setMenu(false);
     selected=null; hideTip(); build(); render();
   }
   document.documentElement.style.setProperty("--barh", header.offsetHeight+"px");
   if(!phone){ delete document.body.dataset.focus; field.style.removeProperty("--tf"); return; }
   if(!PCX[view]) view="m";
   const sc=field.parentElement, w=sc.clientWidth||innerWidth, h=sc.clientHeight||innerHeight*.7;
-  const k=Math.min(w/490, h/(PH-PTOP));
+  const k=Math.min(w/455, h/(PH-PTOP));
   cur={tx:w/2-PCX[view]*k, ty:-PTOP*k+Math.max(0,(h-(PH-PTOP)*k)/2), k};
   field.style.setProperty("--tf", `translate(${cur.tx.toFixed(1)}px,${cur.ty.toFixed(1)}px) scale(${k.toFixed(4)})`);
   document.body.dataset.focus=view;
+  renderHead();
   tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected", b.dataset.v===view));
 }
 function setView(v){
