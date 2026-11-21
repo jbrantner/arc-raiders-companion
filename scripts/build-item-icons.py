@@ -22,6 +22,7 @@ D = json.loads(data[data.index("=") + 1:].rstrip().rstrip(";"))
 ids = set()
 for k in ("augments", "shields", "mods", "quick", "ammo", "trinkets"):
     ids.update(x["id"] for x in D[k])
+ids.update(D.get("names", {}).keys())  # crafting materials for the shopping list
 for w in D["weapons"]:
     ids.update(t[1] for t in w["tiers"])
     ids.update(c[0] for c in w["combos"])
