@@ -149,7 +149,7 @@ let sheetBack = null;
 function openSheet(html, r){ sheet.innerHTML = html; if (r) sheet.dataset.r = r; else delete sheet.dataset.r; sheet.hidden = false; scrim.hidden = false; sheet.scrollTop = 0; }
 function closeSheet(){ sheet.hidden = true; scrim.hidden = true; sheet.innerHTML = ""; sheetBack = null; }
 scrim.addEventListener("click", closeSheet);
-document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!sheet.hidden) closeSheet(); else closePanels(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!sheet.hidden) closeSheet(); else if (!shopPanel.hidden) shopPanel.hidden = true; else closePanels(); } });
 
 /* generic picker. opts: title, items [{it, sub, off, group}], cats, cur, onPick(id), onRemove, back */
 let P = null;
@@ -418,6 +418,75 @@ $("#loadCode").addEventListener("click", () => {
   const old = L, lost = useLoadout(l); closePanels(); toast(`Loaded ${L.name}.${lost ? ` ${lost} item${lost > 1 ? "s" : ""} didn't fit.` : ""} Tap to undo.`, false, () => { L = old; render(); });
 });
 function copy(t, msg){ (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(msg), () => { const b = $("#codeBox"); b.value = t; b.select(); toast("Select and copy the text.", true); }); }
+
+/* ---------- shopping list: what to gather and craft for N kits of this loadout ---------- */
+const shopPanel = $("#shopPanel");
+let KITS = 1, USE_STASH = true;
+const nm = id => (ITEM[id] && ITEM[id].n) || (D.names[id] && D.names[id][0]) || id;
+const rar = id => (ITEM[id] && ITEM[id].r) || (D.names[id] && D.names[id][1]) || "";
+/* Amplified weapon ids -> recipe: Tier IV (or the one version) + amplification module + upgrade parts */
+const AMPREC = {};
+D.weapons.forEach(w => { const a = D.amp[w.id]; if (!a) return; const amp = w.tiers.find(t => t[0] === "amp");
+  const mk = (u) => { const i = { [a.from]: 1, [a.mod]: 1 }; u.forEach(j => { for (const k in a.ups[j]) i[k] = (i[k] || 0) + a.ups[j][k]; }); return { i, o: 1, b: "Gunsmith 4 + Research Station 4", amp: w.n, ups: u.map(j => w.ups[j]) }; };
+  AMPREC[amp[1]] = mk([]); w.combos.forEach(c => AMPREC[c[0]] = mk(c[1])); });
+const recipeOf = id => AMPREC[id] || D.rec[id] || null;
+function plan(){
+  const avail = USE_STASH ? Object.assign({}, STASH) : {}, gather = {}, used = {}, crafts = new Map();
+  const N = totals().N;
+  function expand(id, q){
+    const take = Math.min(avail[id] || 0, q); if (take) { avail[id] -= take; used[id] = (used[id] || 0) + take; q -= take; }
+    if (!q) return;
+    const r = recipeOf(id);
+    if (!r || !r.i) { gather[id] = (gather[id] || 0) + q; return; }
+    const n = Math.ceil(q / (r.o || 1));
+    for (const k in r.i) expand(k, r.i[k] * n);
+    const c = crafts.get(id); if (c) c.n += n; else crafts.set(id, { n, r });
+  }
+  const order = id => ["aug", "shield", "weapon", "mod", "quick", "ammo", "trinket"].indexOf((ITEM[id] || {}).kind);
+  Object.keys(N).sort((a, b) => order(a) - order(b)).forEach(id => expand(id, N[id] * KITS));
+  return { gather, used, crafts };
+}
+function shopRow(id, q, sub, cls){ return `<li class="${cls || ""}" data-r="${esc(rar(id))}"><div class="pic">${img(id)}</div><span class="nm">${esc(nm(id))}</span><span class="q">${q}</span>${sub ? `<span class="sub">${sub}</span>` : ""}</li>`; }
+function craftLabel(id, c){
+  const r = c.r;
+  if (r.amp) return `Amplify ${esc(r.amp)}${r.ups.length ? ` with ${esc(r.ups.join(" + "))}` : ""}`;
+  if (r.up) return `Upgrade to ${esc(nm(id))}`;
+  return `Craft ${esc(nm(id))}`;
+}
+function renderShop(){
+  const P2 = plan(), hs = hasStash() && USE_STASH;
+  const g = Object.entries(P2.gather).sort((a, b) => (D.rec[a[0]] && D.rec[a[0]].buy ? 1 : 0) - (D.rec[b[0]] && D.rec[b[0]].buy ? 1 : 0) || nm(a[0]).localeCompare(nm(b[0])));
+  const nCraft = [...P2.crafts.values()].reduce((s, c) => s + 1, 0);
+  $("#shopTop").innerHTML = `<h3>${esc(L.name || "Loadout")}</h3>
+    <p style="margin:0">${g.length ? `${g.length} material${g.length > 1 ? "s" : ""} to find` : "Nothing to find"}${nCraft ? ` and ${nCraft} thing${nCraft > 1 ? "s" : ""} to craft` : ""}${hs ? ", after what's already in your stash" : ""}.</p>
+    <div class="kits"><span>Kits</span><button type="button" data-kits="-1" aria-label="One fewer kit">−</button><b>${KITS}</b><button type="button" data-kits="1" aria-label="One more kit">+</button></div>
+    ${hasStash() ? `<label class="tog" style="margin:8px 0 0"><input type="checkbox" id="useStash"${USE_STASH ? " checked" : ""}> <span>Count what's in my stash</span></label>` : `<p class="fine">Fill in your stash on the <a href="inventory.html">Stash</a> screen and this list will take off what you already have.</p>`}`;
+  $("#shopGather").innerHTML = g.map(([id, q]) => { const r = D.rec[id] || {}, top = ITEM[id] && ITEM[id].kind;
+    const sub = r.buy ? `Or buy from ${esc(r.buy[0])} for ${fmt(r.buy[1])} coins` : top ? "No recipe in the data. Find it or buy it in game." : id.startsWith("amplification_module") ? "Drops from the ARC Frigate and the Emperor" : "";
+    return shopRow(id, "×" + q, sub, hs ? "miss" : ""); }).join("") || `<li class="empty">Nothing. You have it all.</li>`;
+  $("#shopCraft").innerHTML = [...P2.crafts.entries()].map(([id, c]) => { const r = c.r;
+    const where = [r.b ? (r.l ? `${r.b} ${r.l}` : r.b) : "", r.raid ? "or in raid" : "", r.bp ? "<b>needs blueprint</b>" : "", r.amp ? "plus each upgrade's research" : ""].filter(Boolean).join(" · ");
+    const uses = Object.entries(r.i).map(([k, v]) => `${v * c.n} ${nm(k)}`).join(", ");
+    return `<li data-r="${esc(rar(id))}"><div class="pic">${img(id)}</div><span class="nm">${craftLabel(id, c)}</span><span class="q">${c.n > 1 || (r.o || 1) > 1 ? "×" + c.n * (r.o || 1) : ""}</span><span class="sub">${where}${where ? "<br>" : ""}Uses ${esc(uses)}</span></li>`; }).join("") || `<li class="empty">Nothing to craft.</li>`;
+  const u = Object.entries(P2.used); $("#shopUsedCard").hidden = !u.length;
+  $("#shopUsed").innerHTML = u.sort((a, b) => nm(a[0]).localeCompare(nm(b[0]))).map(([id, q]) => shopRow(id, "×" + q, "", "ok")).join("");
+  $("#shopNote").textContent = `Recipes and upgrade costs come from ${D.recipesFrom}. Amplified upgrade parts come from the ARC Raiders Wiki. Recipes can change in a patch, so check the bench in game.`;
+  return P2;
+}
+function shopText(){
+  const P2 = plan(), lines = [`${L.name || "Loadout"}${KITS > 1 ? ` ×${KITS}` : ""}: shopping list`, "", "GATHER"];
+  Object.entries(P2.gather).forEach(([id, q]) => lines.push(`- ${nm(id)} ×${q}`));
+  lines.push("", "CRAFT");
+  [...P2.crafts.entries()].forEach(([id, c]) => lines.push(`- ${craftLabel(id, c).replace(/&amp;/g, "&")}${c.n * (c.r.o || 1) > 1 ? ` ×${c.n * (c.r.o || 1)}` : ""}${c.r.b ? ` (${c.r.b}${c.r.l ? " " + c.r.l : ""})` : ""}`));
+  return lines.join("\n");
+}
+$("#shopBtn").addEventListener("click", () => { loadStash(); renderShop(); shopPanel.hidden = false; shopPanel.scrollTop = 0; });
+shopPanel.addEventListener("click", e => {
+  if (e.target.closest("[data-close]")) { shopPanel.hidden = true; return; }
+  const k = e.target.closest("[data-kits]"); if (k) { KITS = Math.max(1, Math.min(10, KITS + +k.dataset.kits)); renderShop(); }
+});
+shopPanel.addEventListener("change", e => { if (e.target.id === "useStash") { USE_STASH = e.target.checked; renderShop(); } });
+$("#copyShop").addEventListener("click", () => copy(shopText(), "Shopping list copied."));
 
 /* ---------- toast ---------- */
 let tT = 0, tUndo = null;

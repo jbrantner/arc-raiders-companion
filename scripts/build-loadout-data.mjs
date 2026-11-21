@@ -50,7 +50,7 @@ const shields = SNAP.items.filter((x) => x.t === "Shield").map((x) => ({ ...base
 
 /* ---------- Mods ---------- */
 const slotOf = (id) => /grip/.test(id) ? "grip" : /mag/.test(id) ? "mag" : /stock|converter/.test(id) ? "stock" : /splitter/.test(id) ? "tech" : "muzzle";
-const mods = SNAP.items.filter((x) => x.t === "Modification").map((x) => { const r = RTI.get(x.id) || {}; return { ...base(x), d: desc(x.id), slot: slotOf(x.id), fx: fx(r).filter((e) => !/^compatible/i.test(e[0])), fits: r.compatibleWith || [] }; });
+const mods = SNAP.items.filter((x) => x.t === "Modification" && !/^Deprecated/i.test(x.n)).map((x) => { const r = RTI.get(x.id) || {}; return { ...base(x), d: desc(x.id), slot: slotOf(x.id), fx: fx(r).filter((e) => !/^compatible/i.test(e[0])), fits: r.compatibleWith || [] }; });
 
 /* ---------- Weapons, grouped by family ---------- */
 const WT = ["Assault Rifle", "SMG", "Pistol", "Shotgun", "Battle Rifle", "Sniper Rifle", "LMG", "Hand Cannon", "Special"];
@@ -82,6 +82,8 @@ for (const F of fams.values()) {
   for (const [s, l] of Object.entries(ref.modSlots || {})) { const k = slotOf(l[0]); slots[k] = [...new Set([...(slots[k] || []), ...l])]; }
   const o = OVR[F.id] || {};
   for (const k of o.slots || []) slots[k] = mods.filter((md) => md.slot === k && GEN[k].some((g) => md.id.startsWith(g))).map((md) => md.id);
+  const modIds = new Set(mods.map((md) => md.id));
+  for (const k of Object.keys(slots)) { slots[k] = slots[k].filter((id) => modIds.has(id)); if (!slots[k].length) delete slots[k]; }
   const tiers = [];
   for (const t of TIERS) if (F.vars[t]) tiers.push([t, F.vars[t].id, F.vars[t].r, F.vars[t].w, F.vars[t].v]);
   if (F.vars.one) tiers.push(["one", F.vars.one.id, F.vars.one.r, F.vars.one.w, F.vars.one.v]);
@@ -107,7 +109,52 @@ const quick = SNAP.items.filter((x) => x.t === "Quick Use").map((x) => ({ ...bas
 const ammo = SNAP.items.filter((x) => x.t === "Ammunition").map((x) => ({ ...base(x), s: x.s }));
 const trinkets = SNAP.items.filter((x) => x.t === "Trinket").map((x) => ({ ...base(x), s: x.s }));
 
-const out = { generatedAt: SNAP.generatedAt, rtCommitDate: "", augments, shields, weapons, mods: mods.map(({ fits, ...m }) => m), quick, ammo, trinkets, upblock: UPBLOCK };
+/* ---------- Crafting: recipes (RaidTheory), weapon tier upgrades, Amplified upgrade parts (wiki), buy prices ---------- */
+const BENCH = Object.fromEntries(readdirSync(RT + "/hideout").filter((f) => f.endsWith(".json")).map((f) => { const h = JSON.parse(readFileSync(RT + "/hideout/" + f, "utf8")); return [h.id, en(h.name)]; }));
+BENCH.in_raid = "In raid";
+const rec = {}, names = {};
+const prevTier = { ii: "i", iii: "ii", iv: "iii" };
+function addRecipe(id) {
+  if (rec[id] !== undefined) return; const r = RTI.get(id); rec[id] = null;
+  if (!r) return;
+  const m = id.match(/^(.*)_(ii|iii|iv)$/);
+  let inp = null, out = 1;
+  if (m && r.upgradeCost) inp = { [m[1] + "_" + prevTier[m[2]]]: 1, ...r.upgradeCost };
+  else if (r.recipe && Object.keys(r.recipe).length) { inp = r.recipe; out = r.craftQuantity || 1; }
+  const benches = [].concat(r.craftBench || []).filter((b) => b !== "in_raid");
+  const buy = (r.vendors || []).filter((v) => v.cost && v.cost.coins).map((v) => [v.trader, v.cost.coins])[0] || null;
+  if (inp) rec[id] = { i: inp, o: out, b: benches.map((b) => BENCH[b] || b).join(" / "), l: r.stationLevelRequired || 0, bp: !!r.blueprintLocked, raid: [].concat(r.craftBench || []).includes("in_raid") || undefined, buy: buy || undefined, up: !!(m && r.upgradeCost) || undefined };
+  else if (buy) rec[id] = { buy };
+  if (inp) for (const k of Object.keys(inp)) addRecipe(k);
+}
+const AMP_PARTS = {
+  "Incendiary Rounds": { fossilized_lightning: 3 }, "Incendiary Grenades": { fossilized_lightning: 3 }, "X-Rounds": { fossilized_lightning: 3 },
+  "Semi-Auto": { pneumatic_actuator: 3 }, "Full-Auto": { pneumatic_actuator: 3 }, "High Velocity": { pneumatic_actuator: 2 },
+  "Sprint Shooting": { fluted_rotor_core: 4 }, "Ergonomic Bolt": { fluted_rotor_core: 3 }, "Scoped": { fluted_rotor_core: 4 },
+  "Tracker Rounds": { matriarch_reactor: 2 }, "Anti-Shield": { assessor_matrix: 3 }, "Anti-Weak Point": { assessor_matrix: 2 },
+  "More Reload": { propellant_valve_assembly: 2 }, "Carbine Conversion": { propellant_valve_assembly: 3 }, "Mag Reload": { propellant_valve_assembly: 3 },
+  "Drum Mag": { pressure_regulator: 4 }, "Bigger Mag": { pressure_regulator: 3 }, "Increased Burst": { pressure_regulator: 2 },
+  "Burst Fire": { queen_reactor: 2 }, "Charged Burst": { queen_reactor: 2 }, "Ramping Damage": { queen_reactor: 3 },
+  "Slug Rounds": { turbine_compressor: 4 }, "Anvil Splitter": { turbine_compressor: 3 },
+};
+/* weapon-specific counts that differ from the defaults above (ARC Raiders Wiki, Amplified Weapons, Nov 13, 2026) */
+const AMP_OVR = { "Hairpin:Sprint Shooting": { fluted_rotor_core: 3 }, "Hairpin:Tracker Rounds": { matriarch_reactor: 1 }, "Rascal:Sprint Shooting": { fluted_rotor_core: 2 },
+  "Jupiter:Scoped": { fluted_rotor_core: 3 }, "Burletta:Sprint Shooting": { fluted_rotor_core: 4 } };
+const MK = { Common: "i", Uncommon: "ii", Rare: "iii", Epic: "iv", Legendary: "v" };
+const amp = {};
+for (const w of weapons) {
+  for (const t of w.tiers) addRecipe(t[1]);
+  const a = w.tiers.find((t) => t[0] === "amp"); if (!a) continue;
+  const baseT = w.tiers.find((t) => t[0] === "iv") || w.tiers.find((t) => t[0] === "one");
+  const r0 = (w.tiers.find((t) => t[0] === "i") || baseT)[2];
+  amp[w.id] = { from: baseT[1], mod: "amplification_module_mk_" + MK[r0], ups: w.ups.map((u) => AMP_OVR[w.n + ":" + u] || AMP_PARTS[u] || {}) };
+  addRecipe(amp[w.id].mod); for (const p of amp[w.id].ups.flatMap((o) => Object.keys(o))) addRecipe(p);
+}
+for (const l of [augments, shields, mods, quick, ammo]) for (const x of l) addRecipe(x.id);
+for (const id of Object.keys(rec)) { const x = ITEMS.get(id); names[id] = x ? [x.n, x.r] : [en(RTI.get(id)?.name) || id, RTI.get(id)?.rarity || ""]; }
+for (const k of Object.keys(rec)) if (rec[k] === null) delete rec[k];
+
+const out = { generatedAt: SNAP.generatedAt, rtCommitDate: "", augments, shields, weapons, mods: mods.map(({ fits, ...m }) => m), quick, ammo, trinkets, upblock: UPBLOCK, rec, amp, names, recipesFrom: "RaidTheory/arcraiders-data, Aug 18, 2026" };
 const header = `/* ARC Raiders loadout data: augments, shields, weapons (tiers, Amplified upgrades, mod slots), mods, quick use, ammo, trinkets.
    Built by scripts/build-loadout-data.mjs from the ArcTracker snapshot in js/game-data.js and RaidTheory/arcraiders-data (MIT),
    plus augment slot counts from community guides. Game content (c) Embark Studios AB. */

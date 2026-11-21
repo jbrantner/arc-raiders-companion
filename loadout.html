@@ -7,7 +7,7 @@
 <meta name="description" content="ARC Raiders loadout planner: augment, shield, weapons with mods and Amplified upgrades, quick use, safe pocket and backpack.">
 <meta name="theme-color" content="#000000">
 <meta name="format-detection" content="telephone=no">
-<meta name="app-version" content="202611202245">
+<meta name="app-version" content="202611210040">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -18,7 +18,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/loadout.css?v=202611202245">
+<link rel="stylesheet" href="css/loadout.css?v=202611210040">
 </head>
 <body>
 <header class="ibar">
@@ -33,7 +33,7 @@
 </header>
 
 <main class="lmain" id="main">
-  <div class="lname"><button type="button" id="nameBtn"><span id="loName">New loadout</span><small id="loNote"></small></button></div>
+  <div class="lname"><button type="button" id="nameBtn"><span id="loName">New loadout</span><small id="loNote"></small></button><button class="abtn" type="button" id="shopBtn">List</button></div>
   <div class="wbar" id="wbar" aria-hidden="true"><b></b></div>
 
   <div class="row2">
@@ -88,9 +88,19 @@
   <p class="fine">Items, weapons and mods: ArcTracker game data from <span id="dataDate"></span> and <a href="https://github.com/RaidTheory/arcraiders-data" target="_blank" rel="noopener">RaidTheory/arcraiders-data</a>. Augment slot counts from community guides, checked against patch notes through 2.6.0 (Nov 17, 2026). Amplified upgrades follow the ARC Raiders Wiki. Fan-made, not affiliated with Embark Studios.</p>
 </section>
 
+<section class="panel" id="shopPanel" hidden aria-label="Shopping list">
+  <div class="phd"><h2>Shopping list</h2><button class="abtn" data-close type="button">Done</button></div>
+  <div class="card" id="shopTop"></div>
+  <div class="card"><h3>Gather</h3><ul class="shop" id="shopGather"></ul></div>
+  <div class="card"><h3>Craft, in this order</h3><ol class="shop craft" id="shopCraft"></ol></div>
+  <div class="card" id="shopUsedCard"><h3>Already in your stash</h3><ul class="shop" id="shopUsed"></ul></div>
+  <div class="row"><button class="abtn hot grow" id="copyShop" type="button">Copy list</button></div>
+  <p class="fine" id="shopNote"></p>
+</section>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="js/item-icons.js?v=202611202245"></script>
-<script src="js/loadout-data.js?v=202611202245"></script>
-<script src="js/loadout.js?v=202611202245"></script>
+<script src="js/item-icons.js?v=202611210040"></script>
+<script src="js/loadout-data.js?v=202611210040"></script>
+<script src="js/loadout.js?v=202611210040"></script>
 </body>
 </html>
